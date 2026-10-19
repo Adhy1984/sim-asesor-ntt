@@ -8,6 +8,43 @@
  * ================================================================================
  */
 
+// Utilitas Deteksi Jenis Perangkat Pengguna (HP / Laptop / Tablet)
+function getClientDeviceInfo() {
+  try {
+    const ua = navigator.userAgent || '';
+    const isTouch = (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+    const isMacIntelTouch = (navigator.platform === 'MacIntel' && isTouch);
+
+    if (/iPad/i.test(ua) || isMacIntelTouch) {
+      return 'Tablet (iPad)';
+    }
+    if (/Android/i.test(ua)) {
+      return /Mobile/i.test(ua) ? 'HP (Android)' : 'Tablet (Android)';
+    }
+    if (/iPhone/i.test(ua)) {
+      return 'HP (iPhone)';
+    }
+    if (/Windows NT/i.test(ua)) {
+      return 'Laptop (Windows)';
+    }
+    if (/Macintosh/i.test(ua)) {
+      return 'Laptop (macOS)';
+    }
+    if (/Linux/i.test(ua)) {
+      return /Mobile/i.test(ua) ? 'HP (Linux)' : 'Laptop (Linux)';
+    }
+    if (/CrOS/i.test(ua)) {
+      return 'Laptop (ChromeOS)';
+    }
+    if (/Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+      return 'HP (Mobile)';
+    }
+    return 'Laptop / PC';
+  } catch (e) {
+    return 'Laptop / PC';
+  }
+}
+
 // Shim Universal google.script.run untuk Vercel / Eksternal Hosting
 (function initVercelGasShim() {
   const hasNativeGas = typeof google !== 'undefined' && typeof google.script !== 'undefined' && typeof google.script.run !== 'undefined';
@@ -65,8 +102,8 @@
   };
 
   // Pendaftaran Seluruh Fungsi Backend Sesuai code.gs
-  ApiRunner.prototype.loginUser = function(username, password) {
-    this._callApi('loginUser', { username: username, password: password });
+  ApiRunner.prototype.loginUser = function(username, password, device) {
+    this._callApi('loginUser', { username: username, password: password, device: device || getClientDeviceInfo() });
   };
   ApiRunner.prototype.ambilSemuaData = function() {
     this._callApi('ambilSemuaData', {});
@@ -449,7 +486,7 @@
               errMsg.style.display = 'block';
             }
           })
-          .loginUser(u, p);
+          .loginUser(u, p, getClientDeviceInfo());
       } else {
         // Simulasi Standalone Browser (Kredensial Bawaan Sheet DataUser)
         setTimeout(function() {
@@ -458,10 +495,11 @@
             btnSubmit.innerHTML = '<span>Masuk ke Sistem</span><svg width="18" height="18" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
           }
           const uLower = u.toLowerCase();
+          const devType = getClientDeviceInfo();
           if (uLower === 'admin' && p === 'admin') {
-            loginSuccess({ username: 'admin', nama: 'Administrator Sistem', role: 'Admin' });
+            loginSuccess({ username: 'admin', nama: 'Administrator Sistem', role: 'Admin', perangkat: devType });
           } else if (uLower === 'user' && p === 'user') {
-            loginSuccess({ username: 'user', nama: 'Pengguna Asesor', role: 'User' });
+            loginSuccess({ username: 'user', nama: 'Pengguna Asesor', role: 'User', perangkat: devType });
           } else {
             if (errMsg) {
               errMsg.textContent = 'Username atau password tidak cocok. Gunakan admin / admin atau user / user.';
@@ -2643,6 +2681,40 @@
       return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     }
 
+    function formatDeviceBadge(perangkatStr, isCurrent) {
+      let dev = String(perangkatStr || '').trim();
+      if ((!dev || dev === '-' || dev === 'undefined' || dev === 'null') && isCurrent) {
+        dev = getClientDeviceInfo();
+      }
+      if (!dev || dev === '-' || dev === 'undefined' || dev === 'null') {
+        return '<span style="color: #94a3b8; font-size: 0.725rem;">-</span>';
+      }
+
+      const devLower = dev.toLowerCase();
+      const isTablet = devLower.includes('tablet') || devLower.includes('ipad');
+      const isMobile = devLower.includes('hp') || devLower.includes('android') || devLower.includes('iphone') || devLower.includes('mobile');
+
+      if (isTablet) {
+        return '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 0.685rem; font-weight: 600; background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe;" title="' + escapeHtmlAttr(dev) + '">' +
+          '<svg viewBox="0 0 24 24" style="width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2;"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>' +
+          '<span>' + escapeHtmlAttr(dev) + '</span>' +
+        '</span>';
+      }
+
+      if (isMobile) {
+        return '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 0.685rem; font-weight: 600; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;" title="' + escapeHtmlAttr(dev) + '">' +
+          '<svg viewBox="0 0 24 24" style="width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2;"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>' +
+          '<span>' + escapeHtmlAttr(dev) + '</span>' +
+        '</span>';
+      }
+
+      // Laptop / PC (Default)
+      return '<span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 9999px; font-size: 0.685rem; font-weight: 600; background: #f8fafc; color: #334155; border: 1px solid #cbd5e1;" title="' + escapeHtmlAttr(dev) + '">' +
+        '<svg viewBox="0 0 24 24" style="width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg>' +
+        '<span>' + escapeHtmlAttr(dev) + '</span>' +
+      '</span>';
+    }
+
     function openUserModal() {
       const curRole = String(APP_STATE.currentUserRole || '').toLowerCase();
       const curUsername = (APP_STATE.currentUser && APP_STATE.currentUser.username) ? String(APP_STATE.currentUser.username).toLowerCase() : '';
@@ -2694,7 +2766,7 @@
       const countEl = document.getElementById('userTotalCount');
 
       if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #64748b;">' +
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #64748b;">' +
           '<div class="loader-spinner" style="margin: 0 auto 0.5rem auto; width: 24px; height: 24px; border-width: 2.5px;"></div>' +
           'Memuat data akun pengguna dari sheet DataUser...' +
         '</td></tr>';
@@ -2710,7 +2782,7 @@
               if (isManual) showToast('Data pengguna berhasil diperbarui.');
             } else {
               if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
                   'Gagal memuat pengguna: ' + ((res && res.message) || 'Unknown error') +
                 '</td></tr>';
               }
@@ -2718,7 +2790,7 @@
           })
           .withFailureHandler(function(err) {
             if (tbody) {
-              tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
+              tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
                 'Kesalahan server saat memuat pengguna: ' + (err.message || err.toString()) +
               '</td></tr>';
             }
@@ -2734,8 +2806,8 @@
           }
           if (!localUsers || localUsers.length === 0) {
             localUsers = [
-              { no: 1, rowNumber: 2, username: 'admin', nama: 'Administrator Sistem', role: 'Admin', status: 'Aktif', terakhirLogin: '18 Okt 2026, 11:20 WITA', aktivitasTerakhir: 'Login Sistem' },
-              { no: 2, rowNumber: 3, username: 'user', nama: 'Pengguna Asesor', role: 'User', status: 'Aktif', terakhirLogin: '18 Okt 2026, 10:15 WITA', aktivitasTerakhir: 'Lihat Dashboard' }
+              { no: 1, rowNumber: 2, username: 'admin', nama: 'Administrator Sistem', role: 'Admin', status: 'Aktif', terakhirLogin: '20 Okt 2026, 06:44:22 WITA', aktivitasTerakhir: 'Login Sistem', perangkat: 'Laptop (Windows)' },
+              { no: 108, rowNumber: 3, username: 'user', nama: 'USER', role: 'User', status: 'Aktif', terakhirLogin: '20 Okt 2026, 06:42:08 WITA', aktivitasTerakhir: 'Lihat Dashboard', perangkat: 'HP (Android)' }
             ];
             localStorage.setItem('SIM_USER_LIST', JSON.stringify(localUsers));
           }
@@ -2752,7 +2824,7 @@
       if (!tbody) return;
 
       if (!users || users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #64748b;">Tidak ada data pengguna yang sesuai.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: #64748b;">Tidak ada data pengguna yang sesuai.</td></tr>';
         return;
       }
 
@@ -2792,6 +2864,7 @@
             '<span style="display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; ' + statusClass + '">' + (u.status || 'Aktif') + '</span>' +
           '</td>' +
           '<td style="padding: 8px 10px; white-space: nowrap; font-size: 0.725rem; color: #64748b;">' + (u.terakhirLogin || '-') + '</td>' +
+          '<td style="padding: 8px 10px; text-align: center; white-space: nowrap;">' + formatDeviceBadge(u.perangkat, isCurrent) + '</td>' +
           '<td style="padding: 8px 10px; text-align: center; white-space: nowrap;">' +
             '<div style="display: inline-flex; align-items: center; gap: 4px;">' +
               '<button type="button" class="btn-secondary" onclick="openChangePasswordModal(\'' + escapeHtmlAttr(uName) + '\', \'' + escapeHtmlAttr(u.nama || uName) + '\')" title="Ubah / Buat Kata Sandi" style="font-size: 0.7rem; padding: 4px 8px; display: inline-flex; align-items: center; gap: 3px; border-radius: 4px;">' +
