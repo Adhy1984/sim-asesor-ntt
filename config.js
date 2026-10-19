@@ -12,7 +12,7 @@
 
 const CONFIG = {
   // Masukkan URL Exec Web App Google Apps Script Anda di sini:
-  GAS_API_URL: "https://script.google.com/macros/s/AKfycbyyWXweuS6IPuD4Ar_of1KjJcLW46LFX0-QUQJyFF7YClxXbS49nfNVtHCqfWsZyiceAQ/exec",
+  GAS_API_URL: "PASTE_WEB_APP_EXEC_URL_HERE",
   
   // Pengaturan default aplikasi
   APP_NAME: "SIM-ASESOR NTT",
