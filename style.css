@@ -1,4 +1,4 @@
-﻿    /* ==========================================================================
+    /* ==========================================================================
        DESIGN SYSTEM & CSS TOKENS (Human-Crafted Anti-AI Aesthetic)
        ========================================================================== */
     :root {
@@ -133,6 +133,8 @@
       align-items: center;
       gap: 0.75rem;
       flex-shrink: 0;
+      cursor: pointer;
+      user-select: none;
     }
 
     .brand-icon-box {
@@ -146,6 +148,7 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       flex-shrink: 0;
       padding: 4px;
+      cursor: pointer;
     }
 
     .brand-icon-box img,

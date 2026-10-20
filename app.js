@@ -4156,6 +4156,39 @@ function getClientDeviceInfo() {
     });
 
     /**
+     * Kembali ke Halaman Utama (Dashboard) saat Logo / Brand diklik
+     */
+    function navigateToHome() {
+      // 1. Tutup semua dropdown navbar & akun jika sedang terbuka
+      const navMenu = document.getElementById('navDropdownMenu');
+      const navWrapper = document.getElementById('navDropdownWrapper');
+      const toggleBtn = document.getElementById('btnNavDropdownToggle');
+      if (navMenu) navMenu.classList.remove('show');
+      if (navWrapper) navWrapper.classList.remove('open');
+      if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+
+      const userMenu = document.getElementById('userDropdownMenu');
+      const userWrapper = document.getElementById('userDropdownWrapper');
+      const userBtn = document.getElementById('userProfileBtn');
+      if (userMenu) userMenu.classList.remove('show');
+      if (userWrapper) userWrapper.classList.remove('open');
+      if (userBtn) userBtn.setAttribute('aria-expanded', 'false');
+
+      // 2. Tutup drawer samping mobile jika sedang terbuka
+      if (typeof toggleMobileDrawer === 'function') {
+        toggleMobileDrawer(false);
+      }
+
+      // 3. Pindah tab ke Dashboard (In-Memory Switching - 0 Detik)
+      if (typeof switchTab === 'function') {
+        switchTab('dashboard');
+      }
+
+      // 4. Scroll halus ke bagian paling atas halaman
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /**
      * Navigasi Antar Tab (In-Memory Switching - 0 Detik)
      */
     function switchTab(tabKey) {
