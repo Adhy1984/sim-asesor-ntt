@@ -1152,6 +1152,8 @@
        DYNAMIC ASSESSOR FILTER PANEL & CHARTS (FEATURE 1)
        ========================================================================== */
     .assessor-selector-panel {
+      position: relative;
+      z-index: 50;
       background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
       border: 1px solid #e2e8f0;
       border-radius: var(--radius-lg);
@@ -1392,6 +1394,10 @@
       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
+    .stat-pill.pill-tahap.open {
+      z-index: 100;
+    }
+
     .stat-pill.pill-tahap.open .tahap-chevron {
       transform: rotate(180deg);
     }
@@ -1401,11 +1407,13 @@
       position: absolute;
       top: calc(100% + 6px);
       left: 0;
-      min-width: 165px;
+      min-width: 175px;
+      max-height: 290px;
+      overflow-y: auto;
       background: #ffffff;
-      border: 1px solid #e9d5ff;
+      border: 1.5px solid #d8b4fe;
       border-radius: 12px;
-      box-shadow: 0 10px 25px -5px rgba(107, 33, 168, 0.18), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 12px 28px -4px rgba(107, 33, 168, 0.22), 0 6px 12px -2px rgba(0, 0, 0, 0.08);
       padding: 6px;
       z-index: 1000;
     }
@@ -4037,10 +4045,18 @@
 
       /* Panel Pemilih Asesor */
       .assessor-selector-panel {
+        position: relative;
+        z-index: 50;
         padding: 0.85rem;
         gap: 0.75rem;
         margin-bottom: 1rem;
         border-radius: var(--radius-md);
+      }
+
+      .tahap-dropdown-menu {
+        left: auto;
+        right: 0;
+        max-width: calc(100vw - 24px);
       }
 
       .selector-left {

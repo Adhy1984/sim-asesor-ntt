@@ -1196,6 +1196,23 @@ function getClientDeviceInfo() {
     /**
      * Kontrol & Logika Multi-Select Filter Tahap (Dashboard)
      */
+    function matchTahap(itemTahap, selectedTahaps) {
+      if (!selectedTahaps || selectedTahaps.length === 0 || selectedTahaps.includes('ALL')) return true;
+      const raw = String(itemTahap || '').trim().toLowerCase();
+      const numMatch = raw.match(/\d+/);
+      const num = numMatch ? numMatch[0] : '';
+
+      for (let i = 0; i < selectedTahaps.length; i++) {
+        const sel = String(selectedTahaps[i] || '').trim().toLowerCase();
+        if (sel === 'all') return true;
+        if (sel === raw) return true;
+        const selNumMatch = sel.match(/\d+/);
+        const selNum = selNumMatch ? selNumMatch[0] : '';
+        if (num && selNum && num === selNum) return true;
+      }
+      return false;
+    }
+
     function getSelectedTahapFilters() {
       const chkAll = document.getElementById('chkTahapAll');
       if (chkAll && chkAll.checked) {
@@ -1471,8 +1488,8 @@ function getClientDeviceInfo() {
 
       // Filter target sekolah dengan evaluasi menyeluruh
       let targetSchools = (APP_STATE.items || []).filter(function(item) {
-        // 1. Filter Tahap (Mendukung Multi-Select pilihan lebih dari 1 tahap)
-        if (isTahapFiltered && !selectedTahaps.includes(item.tahap)) return false;
+        // 1. Filter Tahap (Mendukung Multi-Select pilihan lebih dari 1 tahap dengan pencocokan cerdas)
+        if (isTahapFiltered && !matchTahap(item.tahap, selectedTahaps)) return false;
 
         // 2. Filter Wilayah (Kolom E: Kab/Kota Satuan Pendidikan)
         if (fWilayah !== 'ALL') {
