@@ -438,16 +438,40 @@
             </select>
           </div>
 
-          <div class="stat-pill pill-tahap">
+          <div class="stat-pill pill-tahap" id="pillTahapWrapper">
             <span>Tahap:</span>
-            <select id="filterTahap" class="pill-select" onchange="onUnifiedFilterChange()">
-              <option value="ALL">Semua Tahap</option>
-              <option value="Tahap 1">Tahap 1</option>
-              <option value="Tahap 2">Tahap 2</option>
-              <option value="Tahap 3">Tahap 3</option>
-              <option value="Tahap 4">Tahap 4</option>
-              <option value="Tahap 5">Tahap 5</option>
-            </select>
+            <button type="button" id="btnTahapDropdown" class="pill-select-trigger" onclick="toggleTahapDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Pilih Satu atau Beberapa Tahap Penilaian">
+              <span id="filterTahapLabel">Semua Tahap</span>
+              <svg class="tahap-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="tahapDropdownMenu" class="tahap-dropdown-menu" onclick="event.stopPropagation()">
+              <label class="tahap-dropdown-item all-option">
+                <input type="checkbox" id="chkTahapAll" checked onchange="onTahapAllToggle(this)">
+                <span>Semua Tahap</span>
+              </label>
+              <div class="tahap-dropdown-divider"></div>
+              <label class="tahap-dropdown-item">
+                <input type="checkbox" class="chk-tahap-item" value="Tahap 1" onchange="onTahapItemToggle()">
+                <span>Tahap 1</span>
+              </label>
+              <label class="tahap-dropdown-item">
+                <input type="checkbox" class="chk-tahap-item" value="Tahap 2" onchange="onTahapItemToggle()">
+                <span>Tahap 2</span>
+              </label>
+              <label class="tahap-dropdown-item">
+                <input type="checkbox" class="chk-tahap-item" value="Tahap 3" onchange="onTahapItemToggle()">
+                <span>Tahap 3</span>
+              </label>
+              <label class="tahap-dropdown-item">
+                <input type="checkbox" class="chk-tahap-item" value="Tahap 4" onchange="onTahapItemToggle()">
+                <span>Tahap 4</span>
+              </label>
+              <label class="tahap-dropdown-item">
+                <input type="checkbox" class="chk-tahap-item" value="Tahap 5" onchange="onTahapItemToggle()">
+                <span>Tahap 5</span>
+              </label>
+            </div>
+            <input type="hidden" id="filterTahap" value="ALL">
           </div>
 
           <a href="#reset-filters" class="btn-reset-filters" onclick="resetDashboardFilters(); if(event) event.preventDefault();" title="Reset Filter Ke Tampilan Awal" role="button">

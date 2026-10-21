@@ -1194,7 +1194,150 @@ function getClientDeviceInfo() {
     }
 
     /**
-     * Handler saat salah satu dari 4 filter pill diubah (Peran, Wilayah, Beban, Progres)
+     * Kontrol & Logika Multi-Select Filter Tahap (Dashboard)
+     */
+    function getSelectedTahapFilters() {
+      const chkAll = document.getElementById('chkTahapAll');
+      if (chkAll && chkAll.checked) {
+        return ['ALL'];
+      }
+      const itemCheckboxes = document.querySelectorAll('.chk-tahap-item:checked');
+      const totalItems = document.querySelectorAll('.chk-tahap-item').length;
+      if (itemCheckboxes.length === 0 || itemCheckboxes.length === totalItems) {
+        return ['ALL'];
+      }
+      const selected = [];
+      itemCheckboxes.forEach(function(chk) {
+        selected.push(chk.value);
+      });
+      return selected;
+    }
+
+    function toggleTahapDropdown(e) {
+      if (e) {
+        e.stopPropagation();
+        if (e.preventDefault) e.preventDefault();
+      }
+      const menu = document.getElementById('tahapDropdownMenu');
+      const wrapper = document.getElementById('pillTahapWrapper');
+      const btn = document.getElementById('btnTahapDropdown');
+      if (!menu) return;
+
+      const isShown = menu.classList.contains('show');
+      if (isShown) {
+        closeTahapDropdown();
+      } else {
+        // Tutup dropdown lain jika terbuka
+        if (typeof closeAllDropdowns === 'function') closeAllDropdowns();
+        menu.classList.add('show');
+        if (wrapper) wrapper.classList.add('open');
+        if (btn) btn.setAttribute('aria-expanded', 'true');
+      }
+    }
+
+    function closeTahapDropdown() {
+      const menu = document.getElementById('tahapDropdownMenu');
+      const wrapper = document.getElementById('pillTahapWrapper');
+      const btn = document.getElementById('btnTahapDropdown');
+      if (menu) menu.classList.remove('show');
+      if (wrapper) wrapper.classList.remove('open');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+
+    function updateTahapDropdownLabel() {
+      const labelEl = document.getElementById('filterTahapLabel');
+      const hiddenInput = document.getElementById('filterTahap');
+      const chkAll = document.getElementById('chkTahapAll');
+      const itemCheckboxes = document.querySelectorAll('.chk-tahap-item:checked');
+
+      if (!labelEl) return;
+
+      if (chkAll && chkAll.checked) {
+        labelEl.textContent = 'Semua Tahap';
+        if (hiddenInput) hiddenInput.value = 'ALL';
+        return;
+      }
+
+      const totalItems = document.querySelectorAll('.chk-tahap-item').length;
+      if (itemCheckboxes.length === 0 || itemCheckboxes.length === totalItems) {
+        if (chkAll) chkAll.checked = true;
+        document.querySelectorAll('.chk-tahap-item').forEach(function(c) { c.checked = false; });
+        labelEl.textContent = 'Semua Tahap';
+        if (hiddenInput) hiddenInput.value = 'ALL';
+        return;
+      }
+
+      const vals = [];
+      itemCheckboxes.forEach(function(c) { vals.push(c.value); });
+
+      let displayLabel = '';
+      if (vals.length === 1) {
+        displayLabel = vals[0];
+      } else if (vals.length === 2) {
+        const n1 = vals[0].replace('Tahap ', '');
+        const n2 = vals[1].replace('Tahap ', '');
+        displayLabel = 'Tahap ' + n1 + ', ' + n2;
+      } else if (vals.length === 3) {
+        const n1 = vals[0].replace('Tahap ', '');
+        const n2 = vals[1].replace('Tahap ', '');
+        const n3 = vals[2].replace('Tahap ', '');
+        displayLabel = 'Tahap ' + n1 + ', ' + n2 + ', ' + n3;
+      } else {
+        displayLabel = vals.length + ' Tahap';
+      }
+
+      labelEl.textContent = displayLabel;
+      if (hiddenInput) hiddenInput.value = vals.join(', ');
+    }
+
+    function onTahapAllToggle(el) {
+      if (el.checked) {
+        document.querySelectorAll('.chk-tahap-item').forEach(function(c) {
+          c.checked = false;
+        });
+      } else {
+        const anyChecked = document.querySelectorAll('.chk-tahap-item:checked').length > 0;
+        if (!anyChecked) {
+          el.checked = true;
+        }
+      }
+      updateTahapDropdownLabel();
+      onUnifiedFilterChange();
+    }
+
+    function onTahapItemToggle() {
+      const chkAll = document.getElementById('chkTahapAll');
+      const itemCheckboxes = document.querySelectorAll('.chk-tahap-item:checked');
+      const totalItems = document.querySelectorAll('.chk-tahap-item').length;
+
+      if (chkAll) {
+        if (itemCheckboxes.length > 0 && itemCheckboxes.length < totalItems) {
+          chkAll.checked = false;
+        } else {
+          chkAll.checked = true;
+          document.querySelectorAll('.chk-tahap-item').forEach(function(c) { c.checked = false; });
+        }
+      }
+
+      updateTahapDropdownLabel();
+      onUnifiedFilterChange();
+    }
+
+    function resetTahapMultiSelect() {
+      const chkAll = document.getElementById('chkTahapAll');
+      if (chkAll) chkAll.checked = true;
+      document.querySelectorAll('.chk-tahap-item').forEach(function(c) {
+        c.checked = false;
+      });
+      const labelEl = document.getElementById('filterTahapLabel');
+      if (labelEl) labelEl.textContent = 'Semua Tahap';
+      const hiddenInput = document.getElementById('filterTahap');
+      if (hiddenInput) hiddenInput.value = 'ALL';
+      closeTahapDropdown();
+    }
+
+    /**
+     * Handler saat salah satu filter pill diubah
      */
     function onUnifiedFilterChange() {
       APP_STATE.dashboardPage = 1;
@@ -1224,7 +1367,11 @@ function getClientDeviceInfo() {
       if (document.getElementById('filterWilayah')) document.getElementById('filterWilayah').value = 'ALL';
       if (document.getElementById('filterBeban')) document.getElementById('filterBeban').value = 'ALL';
       if (document.getElementById('filterProgres')) document.getElementById('filterProgres').value = 'ALL';
-      if (document.getElementById('filterTahap')) document.getElementById('filterTahap').value = 'ALL';
+      if (typeof resetTahapMultiSelect === 'function') {
+        resetTahapMultiSelect();
+      } else if (document.getElementById('filterTahap')) {
+        document.getElementById('filterTahap').value = 'ALL';
+      }
       APP_STATE.selectedAsesorId = 'ALL';
       updateDynamicDashboard();
       showToast('Seluruh filter telah di-reset ke tampilan awal');
@@ -1248,7 +1395,11 @@ function getClientDeviceInfo() {
       if (document.getElementById('filterWilayah')) document.getElementById('filterWilayah').value = 'ALL';
       if (document.getElementById('filterBeban')) document.getElementById('filterBeban').value = 'ALL';
       if (document.getElementById('filterProgres')) document.getElementById('filterProgres').value = 'ALL';
-      if (document.getElementById('filterTahap')) document.getElementById('filterTahap').value = 'ALL';
+      if (typeof resetTahapMultiSelect === 'function') {
+        resetTahapMultiSelect();
+      } else if (document.getElementById('filterTahap')) {
+        document.getElementById('filterTahap').value = 'ALL';
+      }
       APP_STATE.selectedAsesorId = 'ALL';
 
       // 2. Reset Filter Tab 2: Data Penilaian Lengkap
@@ -1306,7 +1457,8 @@ function getClientDeviceInfo() {
       const fWilayah = document.getElementById('filterWilayah') ? document.getElementById('filterWilayah').value : 'ALL';
       const fBeban = document.getElementById('filterBeban') ? document.getElementById('filterBeban').value : 'ALL';
       const fProgres = document.getElementById('filterProgres') ? document.getElementById('filterProgres').value : 'ALL';
-      const fTahap = document.getElementById('filterTahap') ? document.getElementById('filterTahap').value : 'ALL';
+      const selectedTahaps = typeof getSelectedTahapFilters === 'function' ? getSelectedTahapFilters() : ['ALL'];
+      const isTahapFiltered = (selectedTahaps.length > 0 && !selectedTahaps.includes('ALL'));
 
       // Peta cepat asesor berdasarkan ID/NIA untuk pengecekan Peran dan Beban
       const asesorMapById = {};
@@ -1315,12 +1467,12 @@ function getClientDeviceInfo() {
         if (a.nia && a.nia !== '-') asesorMapById[a.nia.toUpperCase()] = a;
       });
 
-      const hasFilter = (asesorId !== 'ALL' || fPeran !== 'ALL' || fWilayah !== 'ALL' || fBeban !== 'ALL' || fProgres !== 'ALL' || fTahap !== 'ALL');
+      const hasFilter = (asesorId !== 'ALL' || fPeran !== 'ALL' || fWilayah !== 'ALL' || fBeban !== 'ALL' || fProgres !== 'ALL' || isTahapFiltered);
 
       // Filter target sekolah dengan evaluasi menyeluruh
       let targetSchools = (APP_STATE.items || []).filter(function(item) {
-        // 1. Filter Tahap
-        if (fTahap !== 'ALL' && item.tahap !== fTahap) return false;
+        // 1. Filter Tahap (Mendukung Multi-Select pilihan lebih dari 1 tahap)
+        if (isTahapFiltered && !selectedTahaps.includes(item.tahap)) return false;
 
         // 2. Filter Wilayah (Kolom E: Kab/Kota Satuan Pendidikan)
         if (fWilayah !== 'ALL') {
@@ -4304,6 +4456,8 @@ function getClientDeviceInfo() {
       if (userMenu) userMenu.classList.remove('show');
       if (userWrapper) userWrapper.classList.remove('open');
       if (userBtn) userBtn.setAttribute('aria-expanded', 'false');
+
+      if (typeof closeTahapDropdown === 'function') closeTahapDropdown();
     }
 
     function selectNavTab(tabKey, e) {
@@ -4338,13 +4492,15 @@ function getClientDeviceInfo() {
         if (navWrapper) navWrapper.classList.remove('open');
         if (navBtn) navBtn.setAttribute('aria-expanded', 'false');
 
+        if (typeof closeTahapDropdown === 'function') closeTahapDropdown();
+
         menu.classList.add('show');
         if (wrapper) wrapper.classList.add('open');
         if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
       }
     }
 
-    // Menutup dropdown saat klik di luar area menu navigasi / akun
+    // Menutup dropdown saat klik di luar area menu navigasi / akun / filter tahap
     document.addEventListener('click', function(e) {
       const wrapper = document.getElementById('navDropdownWrapper');
       if (wrapper && !wrapper.contains(e.target)) {
@@ -4362,6 +4518,11 @@ function getClientDeviceInfo() {
         if (userMenu) userMenu.classList.remove('show');
         userWrapper.classList.remove('open');
         if (userBtn) userBtn.setAttribute('aria-expanded', 'false');
+      }
+
+      const tahapWrapper = document.getElementById('pillTahapWrapper');
+      if (tahapWrapper && !tahapWrapper.contains(e.target)) {
+        if (typeof closeTahapDropdown === 'function') closeTahapDropdown();
       }
     });
 

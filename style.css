@@ -1358,9 +1358,99 @@
       background: #faf5ff;
       border-color: #e9d5ff;
       color: #6b21a8;
+      position: relative;
     }
     .stat-pill.pill-tahap .pill-select {
       color: #3b0764;
+    }
+
+    .pill-select-trigger {
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #3b0764;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0;
+      user-select: none;
+      line-height: 1.2;
+    }
+
+    .tahap-chevron {
+      width: 12px;
+      height: 12px;
+      stroke: #6b21a8;
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .stat-pill.pill-tahap.open .tahap-chevron {
+      transform: rotate(180deg);
+    }
+
+    .tahap-dropdown-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      min-width: 165px;
+      background: #ffffff;
+      border: 1px solid #e9d5ff;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(107, 33, 168, 0.18), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      padding: 6px;
+      z-index: 1000;
+    }
+
+    .tahap-dropdown-menu.show {
+      display: block;
+      animation: navDropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .tahap-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #1e1b4b;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .tahap-dropdown-item:hover {
+      background: #f5f3ff;
+      color: #6b21a8;
+    }
+
+    .tahap-dropdown-item input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      accent-color: #7c3aed;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .tahap-dropdown-item.all-option {
+      font-weight: 700;
+      color: #6b21a8;
+    }
+
+    .tahap-dropdown-divider {
+      height: 1px;
+      background: #f3e8ff;
+      margin: 4px 0;
     }
 
     .pill-select {
