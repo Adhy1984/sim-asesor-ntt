@@ -23,8 +23,25 @@
 
   <!-- Modular CSS Design System & Print Styles (Standar ZettBOT Opsi A) -->
   <link rel="stylesheet" href="style.css">
+
+  <!-- Instant Session Pre-Check: Mencegah kedipan layar login (FOUC) saat membuka di tab baru (v1.0.56) -->
+  <script>
+    (function() {
+      try {
+        var s = sessionStorage.getItem('SIM_ASESOR_USER') || localStorage.getItem('SIM_ASESOR_USER');
+        if (s) {
+          document.documentElement.classList.add('is-authenticated');
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body class="login-active">
+  <script>
+    if (document.documentElement.classList.contains('is-authenticated')) {
+      document.body.classList.remove('login-active');
+    }
+  </script>
 
   <!-- ==========================================================================
        LOGIN OVERLAY SCREEN (Autentikasi Sheet DataUser)

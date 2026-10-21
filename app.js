@@ -526,6 +526,7 @@ function getClientDeviceInfo() {
       } catch (err) {}
       applyUserRole(userObj.role, userObj.nama);
 
+      document.documentElement.classList.add('is-authenticated');
       const overlay = document.getElementById('loginOverlay');
       if (overlay) overlay.style.display = 'none';
       if (document.body) document.body.classList.remove('login-active');
@@ -549,6 +550,7 @@ function getClientDeviceInfo() {
         localStorage.removeItem('SIM_ASESOR_USER');
         localStorage.removeItem('SIM_ASESOR_ROLE');
       } catch (err) {}
+      document.documentElement.classList.remove('is-authenticated');
       APP_STATE.currentUserRole = null;
       APP_STATE.currentUser = null;
 
@@ -652,15 +654,18 @@ function getClientDeviceInfo() {
         try {
           const userObj = JSON.parse(savedUserStr);
           APP_STATE.currentUser = userObj;
+          document.documentElement.classList.add('is-authenticated');
           if (overlay) overlay.style.display = 'none';
           if (document.body) document.body.classList.remove('login-active');
           applyUserRole(userObj.role, userObj.nama);
         } catch (e) {
+          document.documentElement.classList.remove('is-authenticated');
           if (overlay) overlay.style.display = 'flex';
           if (document.body) document.body.classList.add('login-active');
           startLoginPlexusEffect();
         }
       } else {
+        document.documentElement.classList.remove('is-authenticated');
         if (overlay) overlay.style.display = 'flex';
         if (document.body) document.body.classList.add('login-active');
         startLoginPlexusEffect();

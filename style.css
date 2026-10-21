@@ -100,6 +100,26 @@
       display: none !important;
     }
 
+    /* Instant Session Cloak: Mencegah kedipan layar login (FOUC) saat membuka di tab baru (v1.0.56) */
+    html.is-authenticated body.login-active {
+      height: auto !important;
+      overflow: auto !important;
+      background: var(--bg-body, #f8fafc) !important;
+    }
+    html.is-authenticated body.login-active .top-header,
+    html.is-authenticated body.login-active .app-main-layout,
+    html.is-authenticated body.login-active .app-footer {
+      display: block !important;
+    }
+    html.is-authenticated body.login-active .app-main-layout {
+      display: flex !important;
+    }
+    html.is-authenticated body.login-active .login-overlay,
+    html.is-authenticated #loginOverlay,
+    html.is-authenticated .login-overlay {
+      display: none !important;
+    }
+
     /* ==========================================================================
        HEADER & NAVIGATION BAR
        ========================================================================== */
