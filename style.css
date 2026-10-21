@@ -946,6 +946,14 @@
       display: block;
     }
 
+    /* Instant Tab Cloak: Mencegah flash tampilan Dashboard saat membuka tab baru (v1.0.61) */
+    html[data-initial-tab="penugasan"] #tab-dashboard { display: none !important; }
+    html[data-initial-tab="penugasan"] #tab-penugasan { display: block !important; }
+    html[data-initial-tab="data"] #tab-dashboard { display: none !important; }
+    html[data-initial-tab="data"] #tab-data { display: block !important; }
+    html[data-initial-tab="print"] #tab-dashboard { display: none !important; }
+    html[data-initial-tab="print"] #tab-print { display: block !important; }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }

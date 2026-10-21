@@ -34,6 +34,7 @@
           localStorage.removeItem('SIM_ASESOR_USER');
           localStorage.removeItem('SIM_ASESOR_ROLE');
           localStorage.removeItem('SIM_ASESOR_LAST_ACTIVITY');
+          localStorage.removeItem('SIM_ASESOR_DATA_CACHE');
           sessionStorage.removeItem('SIM_ASESOR_USER');
           sessionStorage.removeItem('SIM_ASESOR_ROLE');
         } else {
@@ -45,6 +46,33 @@
       } catch (e) {}
     })();
   </script>
+
+  <!-- Instant Tab Cloak: Mencegah flash tampilan Dashboard saat membuka tab baru (v1.0.61) -->
+  <script>
+    (function() {
+      try {
+        var rawRole = localStorage.getItem('SIM_ASESOR_ROLE') || sessionStorage.getItem('SIM_ASESOR_ROLE');
+        var rawHash = (window.location.hash || '').replace(/^#/, '').toLowerCase().trim();
+        if (rawRole === 'user' && rawHash !== 'dashboard') {
+          return;
+        }
+        var tabKey = (rawHash === 'penugasan' || rawHash === 'data' || rawHash === 'print') ? rawHash :
+                     (rawHash.indexOf('status-') === 0 ? 'data' : '');
+        if (tabKey) {
+          document.documentElement.setAttribute('data-initial-tab', tabKey);
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    /* Critical Tab Cloak Rules (Standar ZettBOT v1.0.61) */
+    html[data-initial-tab="penugasan"] #tab-dashboard { display: none !important; }
+    html[data-initial-tab="penugasan"] #tab-penugasan { display: block !important; }
+    html[data-initial-tab="data"] #tab-dashboard { display: none !important; }
+    html[data-initial-tab="data"] #tab-data { display: block !important; }
+    html[data-initial-tab="print"] #tab-dashboard { display: none !important; }
+    html[data-initial-tab="print"] #tab-print { display: block !important; }
+  </style>
 </head>
 <body class="login-active">
   <script>

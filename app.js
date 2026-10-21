@@ -557,6 +557,7 @@ function getClientDeviceInfo() {
         localStorage.removeItem('SIM_ASESOR_USER');
         localStorage.removeItem('SIM_ASESOR_ROLE');
         localStorage.removeItem('SIM_ASESOR_LAST_ACTIVITY');
+        localStorage.removeItem('SIM_ASESOR_DATA_CACHE');
       } catch (err) {}
       document.documentElement.classList.remove('is-authenticated');
       APP_STATE.currentUserRole = null;
@@ -734,6 +735,7 @@ function getClientDeviceInfo() {
           localStorage.removeItem('SIM_ASESOR_USER');
           localStorage.removeItem('SIM_ASESOR_ROLE');
           localStorage.removeItem('SIM_ASESOR_LAST_ACTIVITY');
+          localStorage.removeItem('SIM_ASESOR_DATA_CACHE');
         } catch (e) {}
       }
 
@@ -770,8 +772,28 @@ function getClientDeviceInfo() {
         }
       }
 
-      refreshData(false);
+      // 1. Jalankan perutean hash URL awal secara instan (0 detik) agar tab yang diminta langsung aktif
       handleInitialHashRoute();
+
+      // 2. Cek ketersediaan cache snapshot data lintas-tab (SIM_ASESOR_DATA_CACHE) untuk pemuatan instan 0 detik
+      let hasLocalCache = false;
+      try {
+        const rawCache = localStorage.getItem('SIM_ASESOR_DATA_CACHE');
+        if (rawCache) {
+          const cached = JSON.parse(rawCache);
+          if (cached && Array.isArray(cached.items) && cached.items.length > 0 && cached.stats && cached.daftarAsesor) {
+            applyLoadedData(cached.items, cached.daftarAsesor, cached.stats, cached.lastSyncTimestamp);
+            hasLocalCache = true;
+          }
+        }
+      } catch (cacheErr) {
+        console.warn('Gagal memuat cache lintas-tab:', cacheErr);
+      }
+
+      // 3. Hanya ambil data dari server jarak jauh jika belum ada data di cache lokal
+      if (!hasLocalCache) {
+        refreshData(false);
+      }
     });
 
     function initAppDate() {
@@ -921,32 +943,60 @@ function getClientDeviceInfo() {
 
     /**
      * Menerapkan data yang sudah dimuat ke dalam UI dan state
+     * Mendukung customTimestamp untuk pemuatan instan dari cache snapshot lintas-tab (v1.0.61)
      */
-    function applyLoadedData(items, daftarAsesor, stats) {
+    function applyLoadedData(items, daftarAsesor, stats, customTimestamp) {
       APP_STATE.items = items;
       APP_STATE.daftarAsesor = daftarAsesor;
       APP_STATE.stats = stats;
 
       // Format Timestamp Log Tarikan Data (Tanggal & Jam)
-      const now = new Date();
-      const datePart = now.toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
-      const timePart = now.toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      }).replace(/\./g, ':');
-      const formattedTimestamp = datePart + ', ' + timePart + ' WITA';
+      let datePart = '';
+      let timePart = '';
+      let formattedTimestamp = '';
+
+      if (customTimestamp) {
+        formattedTimestamp = customTimestamp;
+        const parts = customTimestamp.split(', ');
+        datePart = parts[0] ? parts[0] + ', ' : '';
+        timePart = parts[1] || customTimestamp;
+      } else {
+        const now = new Date();
+        const dPart = now.toLocaleDateString('id-ID', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        });
+        const tPart = now.toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }).replace(/\./g, ':');
+        datePart = dPart + ', ';
+        timePart = tPart + ' WITA';
+        formattedTimestamp = dPart + ', ' + tPart + ' WITA';
+      }
       APP_STATE.lastSyncTimestamp = formattedTimestamp;
 
+      // Simpan snapshot dataset lengkap ke cache lintas-tab (0 detik instan untuk tab baru)
+      try {
+        const cachePayload = {
+          items: items,
+          daftarAsesor: daftarAsesor,
+          stats: stats,
+          lastSyncTimestamp: formattedTimestamp,
+          savedAt: Date.now()
+        };
+        localStorage.setItem('SIM_ASESOR_DATA_CACHE', JSON.stringify(cachePayload));
+      } catch (cacheErr) {
+        console.warn('Gagal menyimpan cache lintas-tab:', cacheErr);
+      }
+
       const lastSyncDateEl = document.getElementById('lastSyncDate');
-      if (lastSyncDateEl) lastSyncDateEl.textContent = datePart + ', ';
+      if (lastSyncDateEl) lastSyncDateEl.textContent = datePart;
       const lastSyncEl = document.getElementById('lastSyncTime');
-      if (lastSyncEl) lastSyncEl.textContent = timePart + ' WITA';
+      if (lastSyncEl) lastSyncEl.textContent = timePart.includes('WITA') ? timePart : (timePart + ' WITA');
       const mobileLastSyncEl = document.getElementById('mobileLastSyncTime');
       if (mobileLastSyncEl) mobileLastSyncEl.textContent = formattedTimestamp;
       const printSyncEl = document.getElementById('printSyncTimeMeta');
@@ -4576,6 +4626,11 @@ function getClientDeviceInfo() {
         tabKey = 'dashboard';
       }
 
+      // Hapus data-initial-tab agar kontrol visual sepenuhnya diambil alih oleh class .active
+      try {
+        document.documentElement.removeAttribute('data-initial-tab');
+      } catch (err) {}
+
       // Sinkronisasi URL Hash agar link dapat di-bookmark / di-share / dibuka di tab baru
       try {
         if (history.replaceState) {
@@ -4647,7 +4702,10 @@ function getClientDeviceInfo() {
     function handleInitialHashRoute() {
       try {
         const rawHash = (window.location.hash || '').replace(/^#/, '').toLowerCase().trim();
-        if (!rawHash) return;
+        if (!rawHash) {
+          try { document.documentElement.removeAttribute('data-initial-tab'); } catch (e) {}
+          return;
+        }
 
         if (rawHash === 'dashboard' || rawHash === 'data' || rawHash === 'penugasan' || rawHash === 'print') {
           switchTab(rawHash);
