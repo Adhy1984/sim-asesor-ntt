@@ -520,6 +520,10 @@ function getClientDeviceInfo() {
       APP_STATE.currentUser = userObj;
       sessionStorage.setItem('SIM_ASESOR_USER', JSON.stringify(userObj));
       sessionStorage.setItem('SIM_ASESOR_ROLE', userObj.role.toLowerCase());
+      try {
+        localStorage.setItem('SIM_ASESOR_USER', JSON.stringify(userObj));
+        localStorage.setItem('SIM_ASESOR_ROLE', userObj.role.toLowerCase());
+      } catch (err) {}
       applyUserRole(userObj.role, userObj.nama);
 
       const overlay = document.getElementById('loginOverlay');
@@ -530,7 +534,8 @@ function getClientDeviceInfo() {
       showToast('Selamat datang, ' + userObj.nama + ' (' + userObj.role + ')');
     }
 
-    function handleLogout() {
+    function handleLogout(e) {
+      if (e && e.preventDefault) e.preventDefault();
       const userMenu = document.getElementById('userDropdownMenu');
       const userWrapper = document.getElementById('userDropdownWrapper');
       const userBtn = document.getElementById('userProfileBtn');
@@ -540,6 +545,10 @@ function getClientDeviceInfo() {
 
       sessionStorage.removeItem('SIM_ASESOR_USER');
       sessionStorage.removeItem('SIM_ASESOR_ROLE');
+      try {
+        localStorage.removeItem('SIM_ASESOR_USER');
+        localStorage.removeItem('SIM_ASESOR_ROLE');
+      } catch (err) {}
       APP_STATE.currentUserRole = null;
       APP_STATE.currentUser = null;
 
@@ -632,7 +641,11 @@ function getClientDeviceInfo() {
     document.addEventListener('DOMContentLoaded', function() {
       initAppDate();
       initMobileDrawerLogo();
-      const savedUserStr = sessionStorage.getItem('SIM_ASESOR_USER');
+      initOpenInNewTabOnButtons();
+      let savedUserStr = sessionStorage.getItem('SIM_ASESOR_USER');
+      if (!savedUserStr) {
+        try { savedUserStr = localStorage.getItem('SIM_ASESOR_USER'); } catch (e) {}
+      }
       const overlay = document.getElementById('loginOverlay');
 
       if (savedUserStr) {
@@ -656,6 +669,7 @@ function getClientDeviceInfo() {
       }
 
       refreshData(false);
+      handleInitialHashRoute();
     });
 
     function initAppDate() {
@@ -853,6 +867,9 @@ function getClientDeviceInfo() {
       renderFullTable();
       renderPrintPreview();
       renderPenugasanData();
+
+      // Sinkronisasi tab sesuai URL Hash yang diminta (misal di-open in new tab)
+      handleInitialHashRoute();
     }
 
     // ==========================================================================
@@ -1952,11 +1969,15 @@ function getClientDeviceInfo() {
       renderFullTable();
     }
 
-    function setQuickFilter(type, btnEl) {
+    function setQuickFilter(type, btnEl, e) {
+      if (e && e.preventDefault) e.preventDefault();
       APP_STATE.fullTablePage = 1;
       APP_STATE.currentFilterFull = type;
       const allBtns = document.querySelectorAll('.toolbar-actions .filter-btn');
       allBtns.forEach(function(b) { b.classList.remove('active'); });
+      if (!btnEl && type) {
+        btnEl = document.querySelector('.filter-btn[href="#status-' + type.toLowerCase() + '"]');
+      }
       if (btnEl) btnEl.classList.add('active');
       renderFullTable();
     }
@@ -2141,7 +2162,8 @@ function getClientDeviceInfo() {
       document.getElementById('statusModal').classList.add('active');
     }
 
-    function closeStatusModal() {
+    function closeStatusModal(e) {
+      if (e && e.preventDefault) e.preventDefault();
       document.getElementById('statusModal').classList.remove('active');
       APP_STATE.pendingModalData = null;
     }
@@ -2201,7 +2223,8 @@ function getClientDeviceInfo() {
       resetExcelImport();
     }
 
-    function closeImportModal() {
+    function closeImportModal(e) {
+      if (e && e.preventDefault) e.preventDefault();
       const modal = document.getElementById('modalImportExcel');
       if (modal) modal.classList.remove('active');
       resetExcelImport();
@@ -2578,7 +2601,8 @@ function getClientDeviceInfo() {
       fetchLogAktivitas(false);
     }
 
-    function closeLogModal() {
+    function closeLogModal(e) {
+      if (e && e.preventDefault) e.preventDefault();
       const modal = document.getElementById('modalLogAktivitas');
       if (modal) modal.classList.remove('active');
     }
@@ -2733,7 +2757,8 @@ function getClientDeviceInfo() {
       fetchUserList(false);
     }
 
-    function closeUserModal() {
+    function closeUserModal(e) {
+      if (e && e.preventDefault) e.preventDefault();
       const modal = document.getElementById('modalUserManagement');
       if (modal) modal.classList.remove('active');
     }
@@ -2867,14 +2892,20 @@ function getClientDeviceInfo() {
           '<td style="padding: 8px 10px; text-align: center; white-space: nowrap;">' + formatDeviceBadge(u.perangkat, isCurrent) + '</td>' +
           '<td style="padding: 8px 10px; text-align: center; white-space: nowrap;">' +
             '<div style="display: inline-flex; align-items: center; gap: 4px;">' +
-              '<button type="button" class="btn-secondary" onclick="openChangePasswordModal(\'' + escapeHtmlAttr(uName) + '\', \'' + escapeHtmlAttr(u.nama || uName) + '\')" title="Ubah / Buat Kata Sandi" style="font-size: 0.7rem; padding: 4px 8px; display: inline-flex; align-items: center; gap: 3px; border-radius: 4px;">' +
+              '<a href="#change-password" class="btn-secondary" onclick="openChangePasswordModal(\'' + escapeHtmlAttr(uName) + '\', \'' + escapeHtmlAttr(u.nama || uName) + '\'); if(event) event.preventDefault();" role="button" title="Ubah / Buat Kata Sandi" style="font-size: 0.7rem; padding: 4px 8px; display: inline-flex; align-items: center; gap: 3px; border-radius: 4px; text-decoration: none; color: inherit; cursor: pointer;">' +
                 '<svg viewBox="0 0 24 24" style="width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
                 '<span>Password</span>' +
-              '</button>' +
-              '<button type="button" class="btn-secondary" onclick="confirmDeleteUser(\'' + escapeHtmlAttr(uName) + '\', \'' + escapeHtmlAttr(u.nama || uName) + '\')" title="' + deleteTooltip + '" ' + (deleteDisabled ? 'disabled style="opacity: 0.45; cursor: not-allowed; font-size: 0.7rem; padding: 4px 8px; display: inline-flex; align-items: center; gap: 3px; border-radius: 4px; color: #94a3b8; border-color: #e2e8f0;"' : 'style="font-size: 0.7rem; padding: 4px 8px; display: inline-flex; align-items: center; gap: 3px; border-radius: 4px; color: #dc2626; border-color: #fecaca; background: #fef2f2;"') + '>' +
-                '<svg viewBox="0 0 24 24" style="width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
-                '<span>Hapus</span>' +
-              '</button>' +
+              '</a>' +
+              (deleteDisabled ?
+                '<span class="btn-secondary" title="' + deleteTooltip + '" style="opacity: 0.45; cursor: not-allowed; font-size: 0.7rem; padding: 4px 8px; display: inline-flex; align-items: center; gap: 3px; border-radius: 4px; color: #94a3b8; border-color: #e2e8f0;">' +
+                  '<svg viewBox="0 0 24 24" style="width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+                  '<span>Hapus</span>' +
+                '</span>' :
+                '<a href="#delete-user" class="btn-secondary" onclick="confirmDeleteUser(\'' + escapeHtmlAttr(uName) + '\', \'' + escapeHtmlAttr(u.nama || uName) + '\'); if(event) event.preventDefault();" role="button" title="' + deleteTooltip + '" style="font-size: 0.7rem; padding: 4px 8px; display: inline-flex; align-items: center; gap: 3px; border-radius: 4px; color: #dc2626; border-color: #fecaca; background: #fef2f2; text-decoration: none; cursor: pointer;">' +
+                  '<svg viewBox="0 0 24 24" style="width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+                  '<span>Hapus</span>' +
+                '</a>'
+              ) +
             '</div>' +
           '</td>' +
         '</tr>';
@@ -3015,7 +3046,8 @@ function getClientDeviceInfo() {
       if (modal) modal.classList.add('active');
     }
 
-    function closeChangePasswordModal() {
+    function closeChangePasswordModal(e) {
+      if (e && e.preventDefault) e.preventDefault();
       const modal = document.getElementById('modalChangePassword');
       if (modal) modal.classList.remove('active');
     }
@@ -4092,14 +4124,26 @@ function getClientDeviceInfo() {
       }
     }
 
-    function selectNavTab(tabKey) {
-      switchTab(tabKey);
-      const menu = document.getElementById('navDropdownMenu');
-      const wrapper = document.getElementById('navDropdownWrapper');
+    function closeAllDropdowns() {
+      const navMenu = document.getElementById('navDropdownMenu');
+      const navWrapper = document.getElementById('navDropdownWrapper');
       const toggleBtn = document.getElementById('btnNavDropdownToggle');
-      if (menu) menu.classList.remove('show');
-      if (wrapper) wrapper.classList.remove('open');
+      if (navMenu) navMenu.classList.remove('show');
+      if (navWrapper) navWrapper.classList.remove('open');
       if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+
+      const userMenu = document.getElementById('userDropdownMenu');
+      const userWrapper = document.getElementById('userDropdownWrapper');
+      const userBtn = document.getElementById('userProfileBtn');
+      if (userMenu) userMenu.classList.remove('show');
+      if (userWrapper) userWrapper.classList.remove('open');
+      if (userBtn) userBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    function selectNavTab(tabKey, e) {
+      if (e && e.preventDefault) e.preventDefault();
+      switchTab(tabKey);
+      closeAllDropdowns();
     }
 
     /**
@@ -4158,21 +4202,10 @@ function getClientDeviceInfo() {
     /**
      * Kembali ke Halaman Utama (Dashboard) saat Logo / Brand diklik
      */
-    function navigateToHome() {
+    function navigateToHome(e) {
+      if (e && e.preventDefault) e.preventDefault();
       // 1. Tutup semua dropdown navbar & akun jika sedang terbuka
-      const navMenu = document.getElementById('navDropdownMenu');
-      const navWrapper = document.getElementById('navDropdownWrapper');
-      const toggleBtn = document.getElementById('btnNavDropdownToggle');
-      if (navMenu) navMenu.classList.remove('show');
-      if (navWrapper) navWrapper.classList.remove('open');
-      if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
-
-      const userMenu = document.getElementById('userDropdownMenu');
-      const userWrapper = document.getElementById('userDropdownWrapper');
-      const userBtn = document.getElementById('userProfileBtn');
-      if (userMenu) userMenu.classList.remove('show');
-      if (userWrapper) userWrapper.classList.remove('open');
-      if (userBtn) userBtn.setAttribute('aria-expanded', 'false');
+      closeAllDropdowns();
 
       // 2. Tutup drawer samping mobile jika sedang terbuka
       if (typeof toggleMobileDrawer === 'function') {
@@ -4191,11 +4224,23 @@ function getClientDeviceInfo() {
     /**
      * Navigasi Antar Tab (In-Memory Switching - 0 Detik)
      */
-    function switchTab(tabKey) {
+    function switchTab(tabKey, e) {
+      if (e && e.preventDefault) e.preventDefault();
       // Proteksi akses untuk akun User biasa
       if (APP_STATE.currentUserRole === 'user' && tabKey !== 'dashboard') {
         showToast('Akses dibatasi: Akun User hanya dapat melihat Dashboard', true);
         tabKey = 'dashboard';
+      }
+
+      // Sinkronisasi URL Hash agar link dapat di-bookmark / di-share / dibuka di tab baru
+      try {
+        if (history.replaceState) {
+          history.replaceState(null, '', '#' + tabKey);
+        } else {
+          window.location.hash = tabKey;
+        }
+      } catch (err) {
+        // Abaikan pembatasan iframe jika ada
       }
 
       const allTabs = document.querySelectorAll('.tab-content');
@@ -4208,7 +4253,8 @@ function getClientDeviceInfo() {
       if (targetTab) targetTab.classList.add('active');
 
       const activeBtns = Array.from(allNavBtns).filter(function(b) {
-        return b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + tabKey + "'");
+        return (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + tabKey + "'")) ||
+               (b.getAttribute('href') && b.getAttribute('href') === '#' + tabKey);
       });
       activeBtns.forEach(function(b) { b.classList.add('active'); });
 
@@ -4247,6 +4293,54 @@ function getClientDeviceInfo() {
         renderFullTable();
       } else if (tabKey === 'penugasan') {
         renderPenugasanData();
+      }
+    }
+
+    /**
+     * Memproses URL Hash saat halaman pertama kali dimuat atau saat hash berubah.
+     * Memungkinkan tombol yang diklik kanan "Open link in new tab" membuka tab/fitur yang sesuai.
+     */
+    function handleInitialHashRoute() {
+      try {
+        const rawHash = (window.location.hash || '').replace(/^#/, '').toLowerCase().trim();
+        if (!rawHash) return;
+
+        if (rawHash === 'dashboard' || rawHash === 'data' || rawHash === 'penugasan' || rawHash === 'print') {
+          switchTab(rawHash);
+        } else if (rawHash === 'status-all' || rawHash === 'status-belum' || rawHash === 'status-selesai') {
+          switchTab('data');
+          const filterKey = rawHash.replace('status-', '').toUpperCase();
+          const targetBtn = document.querySelector('.filter-btn[href="#' + rawHash + '"]');
+          if (typeof setQuickFilter === 'function') {
+            setQuickFilter(filterKey, targetBtn);
+          }
+        } else if (rawHash === 'modal-user') {
+          if (typeof openUserModal === 'function') openUserModal();
+        } else if (rawHash === 'modal-import') {
+          if (typeof openImportModal === 'function') openImportModal();
+        } else if (rawHash === 'modal-log') {
+          if (typeof openLogModal === 'function') openLogModal();
+        } else if (rawHash === 'refresh') {
+          if (typeof refreshData === 'function') refreshData(true);
+        }
+      } catch (err) {
+        console.warn('Hash route handling error:', err);
+      }
+    }
+
+    /**
+     * Helper inisialisasi klik kanan "Open link in new tab" untuk semua tombol
+     */
+    function initOpenInNewTabOnButtons() {
+      try {
+        if (!window._hashChangeListenerAttached) {
+          window.addEventListener('hashchange', function() {
+            handleInitialHashRoute();
+          });
+          window._hashChangeListenerAttached = true;
+        }
+      } catch (e) {
+        // Safe fail
       }
     }
 

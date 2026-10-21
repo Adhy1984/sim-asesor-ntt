@@ -2297,74 +2297,189 @@
     }
 
     /* ==========================================================================
-       MEDIA PRINT STYLES (A4 LANDSCAPE READY)
+       MEDIA PRINT STYLES (A4 LANDSCAPE MULTI-PAGE ENGINE)
        ========================================================================== */
-    @media print {
-      body {
-        background: #ffffff !important;
-        color: #000000 !important;
-      }
+     @media print {
+       html,
+       body {
+         background: #ffffff !important;
+         color: #000000 !important;
+         height: auto !important;
+         min-height: 0 !important;
+         max-height: none !important;
+         overflow: visible !important;
+         overflow-x: visible !important;
+         overflow-y: visible !important;
+         display: block !important;
+         position: static !important;
+         margin: 0 !important;
+         padding: 0 !important;
+         width: 100% !important;
+         max-width: 100% !important;
+       }
 
-      .top-header,
-      .nav-tabs-group,
-      .btn-refresh,
-      .print-control-panel,
-      .toolbar-actions,
-      .search-box-wrap,
-      .metrics-grid,
-      .assessor-selector-panel,
-      .charts-row,
-      .table-card,
-      .modal-backdrop,
-      .toast-container {
+       .top-header,
+       .mobile-drawer,
+       .mobile-drawer-overlay,
+       .mobile-quick-jump,
+       .app-footer,
+       #loginScreen,
+       .nav-tabs-group,
+       .btn-refresh,
+       .print-control-panel,
+       .toolbar-actions,
+       .search-box-wrap,
+       .metrics-grid,
+       .assessor-selector-panel,
+       .charts-row,
+       .table-card,
+       .modal-backdrop,
+       .toast-container {
         display: none !important;
-      }
+       }
 
-      .app-main {
-        padding: 0 !important;
-        margin: 0 !important;
-        max-width: 100% !important;
-      }
+       .app-main {
+         display: block !important;
+         position: static !important;
+         padding: 0 !important;
+         margin: 0 !important;
+         width: 100% !important;
+         max-width: 100% !important;
+         height: auto !important;
+         min-height: 0 !important;
+         max-height: none !important;
+         overflow: visible !important;
+         overflow-x: visible !important;
+         overflow-y: visible !important;
+         flex: none !important;
+       }
 
-      .tab-content {
-        display: none !important;
-      }
+       .tab-content {
+         display: none !important;
+       }
 
-      .tab-content.active {
-        display: block !important;
-      }
+       .tab-content.active {
+         display: block !important;
+         position: static !important;
+         padding: 0 !important;
+         margin: 0 !important;
+         width: 100% !important;
+         height: auto !important;
+         min-height: 0 !important;
+         max-height: none !important;
+         overflow: visible !important;
+         overflow-x: visible !important;
+         overflow-y: visible !important;
+         animation: none !important;
+         transform: none !important;
+       }
 
-      .print-document-container {
-        border: none !important;
-        box-shadow: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        width: 100% !important;
-        overflow: visible !important;
-      }
+       .print-document-container {
+         display: block !important;
+         position: static !important;
+         border: none !important;
+         box-shadow: none !important;
+         padding: 0 !important;
+         margin: 0 !important;
+         width: 100% !important;
+         height: auto !important;
+         min-height: 0 !important;
+         max-height: none !important;
+         overflow: visible !important;
+         overflow-x: visible !important;
+         overflow-y: visible !important;
+         page-break-inside: auto !important;
+         break-inside: auto !important;
+       }
 
-      .print-table-wrapper {
-        overflow: visible !important;
-        border: none !important;
-        margin-bottom: 1.5rem !important;
-        width: 100% !important;
-      }
+       .kop-surat,
+       .report-metadata-box,
+       .print-signatures-row {
+         page-break-inside: avoid !important;
+         break-inside: avoid !important;
+       }
 
-      @page {
-        size: A4 landscape;
-        margin: 1cm;
-      }
+       .report-metadata-box {
+         overflow: visible !important;
+       }
 
-      .print-table {
-        min-width: 100% !important;
-        width: 100% !important;
-        font-size: 8pt !important;
-      }
+       .print-table-wrapper {
+         display: block !important;
+         position: static !important;
+         overflow: visible !important;
+         overflow-x: visible !important;
+         overflow-y: visible !important;
+         border: none !important;
+         margin: 0 0 1.5rem 0 !important;
+         padding: 0 !important;
+         width: 100% !important;
+         height: auto !important;
+         min-height: 0 !important;
+         max-height: none !important;
+         page-break-inside: auto !important;
+         break-inside: auto !important;
+       }
 
-      .print-table th, .print-table td, .print-table tfoot th, .print-table tfoot td {
-        padding: 4px 6px !important;
-      }
-    }
+       @page {
+         size: A4 landscape;
+         margin: 1cm;
+       }
+
+       .print-table {
+         min-width: 100% !important;
+         width: 100% !important;
+         font-size: 8pt !important;
+         border-collapse: collapse !important;
+         page-break-inside: auto !important;
+         break-inside: auto !important;
+       }
+
+       .print-table thead {
+         display: table-header-group !important;
+       }
+
+       .print-table tfoot {
+         display: table-footer-group !important;
+       }
+
+       .print-table tr {
+         page-break-inside: avoid !important;
+         break-inside: avoid !important;
+         page-break-after: auto !important;
+         break-after: auto !important;
+       }
+
+       .print-table th,
+       .print-table td,
+       .print-table tfoot th,
+       .print-table tfoot td {
+         padding: 4px 6px !important;
+         page-break-inside: avoid !important;
+         break-inside: avoid !important;
+       }
+     }
+
+     /* ==========================================================================
+        LINK & BUTTON SEMANTIC NORMALIZATION (OPEN IN NEW TAB SUPPORT)
+        ========================================================================== */
+     a.brand-group,
+     a.mobile-drawer-brand,
+     a.nav-dropdown-item,
+     a.mobile-nav-btn,
+     a.btn-primary,
+     a.btn-secondary,
+     a.filter-btn,
+     a.btn-refresh,
+     a.btn-reset-filters,
+     a.user-dropdown-action-btn,
+     a.user-dropdown-logout-item,
+     a.btn-mobile-admin-action,
+     a.btn-logout-full,
+     a.btn-download-template,
+     a.btn-refresh-log {
+       text-decoration: none !important;
+       color: inherit;
+     }
 
     /* ==========================================================================
        RESPONSIVE BREAKPOINTS (Mobile & Tablet)
