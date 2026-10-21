@@ -523,10 +523,12 @@ function getClientDeviceInfo() {
       try {
         localStorage.setItem('SIM_ASESOR_USER', JSON.stringify(userObj));
         localStorage.setItem('SIM_ASESOR_ROLE', userObj.role.toLowerCase());
+        localStorage.setItem('SIM_ASESOR_LAST_ACTIVITY', Date.now().toString());
       } catch (err) {}
       applyUserRole(userObj.role, userObj.nama);
 
       document.documentElement.classList.add('is-authenticated');
+      if (typeof recordUserActivity === 'function') recordUserActivity();
       const overlay = document.getElementById('loginOverlay');
       if (overlay) overlay.style.display = 'none';
       if (document.body) document.body.classList.remove('login-active');
@@ -535,7 +537,7 @@ function getClientDeviceInfo() {
       showToast('Selamat datang, ' + userObj.nama + ' (' + userObj.role + ')');
     }
 
-    function handleLogout(e) {
+    function handleLogout(e, isTimeout) {
       if (e && e.preventDefault) e.preventDefault();
       const userMenu = document.getElementById('userDropdownMenu');
       const userWrapper = document.getElementById('userDropdownWrapper');
@@ -549,6 +551,7 @@ function getClientDeviceInfo() {
       try {
         localStorage.removeItem('SIM_ASESOR_USER');
         localStorage.removeItem('SIM_ASESOR_ROLE');
+        localStorage.removeItem('SIM_ASESOR_LAST_ACTIVITY');
       } catch (err) {}
       document.documentElement.classList.remove('is-authenticated');
       APP_STATE.currentUserRole = null;
@@ -572,7 +575,11 @@ function getClientDeviceInfo() {
       startLoginPlexusEffect();
       if (userInp) userInp.focus();
 
-      showToast('Sesi Anda telah diakhiri.');
+      if (isTimeout) {
+        showToast('Sesi Anda berakhir karena tidak ada aktivitas selama 15 menit. Silakan login kembali.', true);
+      } else {
+        showToast('Sesi Anda telah diakhiri.');
+      }
     }
 
     function applyUserRole(role, nama) {
@@ -639,22 +646,99 @@ function getClientDeviceInfo() {
       }
     }
 
+    /* ==========================================================================
+       IDLE SESSION TIMEOUT MANAGER (15 MENIT INAKTIVITAS - v1.0.57)
+       ========================================================================== */
+    const SESSION_IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 Menit (900.000 ms)
+    let lastActivityRecordTime = 0;
+
+    /**
+     * Memperbarui stempel waktu aktivitas pengguna (di-throttle maks 1x per 5 detik)
+     */
+    function recordUserActivity() {
+      if (!APP_STATE.currentUser) return;
+      const now = Date.now();
+      if (now - lastActivityRecordTime < 5000) return; // Throttle 5 detik
+      lastActivityRecordTime = now;
+      try {
+        localStorage.setItem('SIM_ASESOR_LAST_ACTIVITY', now.toString());
+      } catch (e) {}
+    }
+
+    /**
+     * Memeriksa apakah sesi telah melampaui batas inaktivitas 15 menit
+     */
+    function checkSessionTimeout() {
+      if (!APP_STATE.currentUser) return;
+      try {
+        const lastActStr = localStorage.getItem('SIM_ASESOR_LAST_ACTIVITY');
+        if (!lastActStr) return;
+        const lastAct = parseInt(lastActStr, 10);
+        if (isNaN(lastAct) || lastAct <= 0) return;
+
+        const elapsed = Date.now() - lastAct;
+        if (elapsed >= SESSION_IDLE_TIMEOUT_MS) {
+          handleLogout(null, true);
+        }
+      } catch (e) {}
+    }
+
+    /**
+     * Menginisialisasi pendengar interaksi pengguna & sinkronisasi multi-tab
+     */
+    function initSessionIdleManager() {
+      if (window._sessionIdleManagerInitialized) return;
+      window._sessionIdleManagerInitialized = true;
+
+      // Pantau event interaksi pasif pengguna (ramah CPU/baterai)
+      const passiveEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
+      passiveEvents.forEach(function(evt) {
+        window.addEventListener(evt, recordUserActivity, { passive: true });
+      });
+
+      // Pengecekan berkala setiap 10 detik
+      setInterval(checkSessionTimeout, 10000);
+
+      // Sinkronisasi logout antar tab secara otomatis
+      window.addEventListener('storage', function(e) {
+        if (e.key === 'SIM_ASESOR_USER' && !e.newValue && APP_STATE.currentUser) {
+          handleLogout(null, false);
+        }
+      });
+    }
+
     // Inisialisasi saat Halaman Dimuat
     document.addEventListener('DOMContentLoaded', function() {
       initAppDate();
       initMobileDrawerLogo();
       initOpenInNewTabOnButtons();
+      initSessionIdleManager();
+
+      // Validasi batas inaktivitas 15 menit sebelum memulihkan sesi
+      const lastAct = parseInt(localStorage.getItem('SIM_ASESOR_LAST_ACTIVITY') || '0', 10);
+      const isExpired = lastAct && (Date.now() - lastAct >= SESSION_IDLE_TIMEOUT_MS);
+      if (isExpired) {
+        sessionStorage.removeItem('SIM_ASESOR_USER');
+        sessionStorage.removeItem('SIM_ASESOR_ROLE');
+        try {
+          localStorage.removeItem('SIM_ASESOR_USER');
+          localStorage.removeItem('SIM_ASESOR_ROLE');
+          localStorage.removeItem('SIM_ASESOR_LAST_ACTIVITY');
+        } catch (e) {}
+      }
+
       let savedUserStr = sessionStorage.getItem('SIM_ASESOR_USER');
       if (!savedUserStr) {
         try { savedUserStr = localStorage.getItem('SIM_ASESOR_USER'); } catch (e) {}
       }
       const overlay = document.getElementById('loginOverlay');
 
-      if (savedUserStr) {
+      if (savedUserStr && !isExpired) {
         try {
           const userObj = JSON.parse(savedUserStr);
           APP_STATE.currentUser = userObj;
           document.documentElement.classList.add('is-authenticated');
+          recordUserActivity();
           if (overlay) overlay.style.display = 'none';
           if (document.body) document.body.classList.remove('login-active');
           applyUserRole(userObj.role, userObj.nama);
@@ -671,6 +755,9 @@ function getClientDeviceInfo() {
         startLoginPlexusEffect();
         const userInp = document.getElementById('loginUsername');
         if (userInp) userInp.focus();
+        if (isExpired) {
+          showToast('Sesi Anda telah berakhir karena tidak ada aktivitas selama 15 menit.', true);
+        }
       }
 
       refreshData(false);

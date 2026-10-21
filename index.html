@@ -24,13 +24,23 @@
   <!-- Modular CSS Design System & Print Styles (Standar ZettBOT Opsi A) -->
   <link rel="stylesheet" href="style.css">
 
-  <!-- Instant Session Pre-Check: Mencegah kedipan layar login (FOUC) saat membuka di tab baru (v1.0.56) -->
+  <!-- Instant Session Pre-Check: Mencegah kedipan layar login & validasi batas sesi 15 menit (v1.0.57) -->
   <script>
     (function() {
       try {
-        var s = sessionStorage.getItem('SIM_ASESOR_USER') || localStorage.getItem('SIM_ASESOR_USER');
-        if (s) {
-          document.documentElement.classList.add('is-authenticated');
+        var lastAct = parseInt(localStorage.getItem('SIM_ASESOR_LAST_ACTIVITY') || '0', 10);
+        var isExpired = lastAct && (Date.now() - lastAct > 15 * 60 * 1000);
+        if (isExpired) {
+          localStorage.removeItem('SIM_ASESOR_USER');
+          localStorage.removeItem('SIM_ASESOR_ROLE');
+          localStorage.removeItem('SIM_ASESOR_LAST_ACTIVITY');
+          sessionStorage.removeItem('SIM_ASESOR_USER');
+          sessionStorage.removeItem('SIM_ASESOR_ROLE');
+        } else {
+          var s = sessionStorage.getItem('SIM_ASESOR_USER') || localStorage.getItem('SIM_ASESOR_USER');
+          if (s) {
+            document.documentElement.classList.add('is-authenticated');
+          }
         }
       } catch (e) {}
     })();
