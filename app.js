@@ -527,6 +527,11 @@ function getClientDeviceInfo() {
       } catch (err) {}
       applyUserRole(userObj.role, userObj.nama);
 
+      // Kembalikan seluruh filter sistem ke status default awal (v1.0.58)
+      if (typeof resetAllSystemFilters === 'function') {
+        resetAllSystemFilters();
+      }
+
       document.documentElement.classList.add('is-authenticated');
       if (typeof recordUserActivity === 'function') recordUserActivity();
       const overlay = document.getElementById('loginOverlay');
@@ -561,6 +566,11 @@ function getClientDeviceInfo() {
       const mobileAdminActions = document.getElementById('mobileAdminActions');
       if (adminDropdownActions) adminDropdownActions.style.display = 'none';
       if (mobileAdminActions) mobileAdminActions.style.display = 'none';
+
+      // Reset seluruh filter sistem ke kondisi awal (default) saat logout (v1.0.58)
+      if (typeof resetAllSystemFilters === 'function') {
+        resetAllSystemFilters();
+      }
 
       const userInp = document.getElementById('loginUsername');
       const passInp = document.getElementById('loginPassword');
@@ -1218,6 +1228,70 @@ function getClientDeviceInfo() {
       APP_STATE.selectedAsesorId = 'ALL';
       updateDynamicDashboard();
       showToast('Seluruh filter telah di-reset ke tampilan awal');
+    }
+
+    /**
+     * Mengembalikan seluruh filter sistem di semua tab (Dashboard, Data Penilaian, Cetak, Penugasan)
+     * ke kondisi awal (default/bersih) saat Logout atau Login kembali (v1.0.58)
+     */
+    function resetAllSystemFilters() {
+      // 1. Reset Filter Tab 1: Dashboard
+      APP_STATE.dashboardPage = 1;
+      const searchInp = document.getElementById('searchAsesorInput');
+      if (searchInp) searchInp.value = '';
+      const btnClear = document.getElementById('btnClearAsesorSearch');
+      if (btnClear) btnClear.style.display = 'none';
+      if (typeof onSearchAsesorInput === 'function') onSearchAsesorInput('');
+
+      if (document.getElementById('selectAsesor')) document.getElementById('selectAsesor').value = 'ALL';
+      if (document.getElementById('filterPeran')) document.getElementById('filterPeran').value = 'ALL';
+      if (document.getElementById('filterWilayah')) document.getElementById('filterWilayah').value = 'ALL';
+      if (document.getElementById('filterBeban')) document.getElementById('filterBeban').value = 'ALL';
+      if (document.getElementById('filterProgres')) document.getElementById('filterProgres').value = 'ALL';
+      if (document.getElementById('filterTahap')) document.getElementById('filterTahap').value = 'ALL';
+      APP_STATE.selectedAsesorId = 'ALL';
+
+      // 2. Reset Filter Tab 2: Data Penilaian Lengkap
+      const searchFull = document.getElementById('searchInput');
+      if (searchFull) searchFull.value = '';
+      const filterDataTahap = document.getElementById('filterDataTahap');
+      if (filterDataTahap) filterDataTahap.value = 'ALL';
+      APP_STATE.currentFilterFull = 'ALL';
+      APP_STATE.fullTablePage = 1;
+
+      const filterBtns = document.querySelectorAll('.table-toolbar .filter-btn');
+      filterBtns.forEach(function(b) {
+        if (b.getAttribute('href') === '#status-all') {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+
+      // 3. Reset Filter Tab 3: Cetak Dokumen Resmi
+      if (document.getElementById('printFormatDokumen')) document.getElementById('printFormatDokumen').value = 'LENGKAP';
+      if (document.getElementById('printFilterAsesor')) document.getElementById('printFilterAsesor').value = 'ALL';
+      if (document.getElementById('printFilterJenjang')) document.getElementById('printFilterJenjang').value = 'ALL';
+      if (document.getElementById('printFilterStatus')) document.getElementById('printFilterStatus').value = 'ALL';
+      if (document.getElementById('printFilterTahap')) document.getElementById('printFilterTahap').value = 'ALL';
+
+      // 4. Reset Filter Tab 4: Penugasan Asesor
+      const penugasanSearch = document.getElementById('penugasanSearchInput');
+      if (penugasanSearch) penugasanSearch.value = '';
+      if (document.getElementById('penugasanSelectAsesor')) document.getElementById('penugasanSelectAsesor').value = 'ALL';
+      if (document.getElementById('penugasanFilterTahap')) document.getElementById('penugasanFilterTahap').value = 'ALL';
+      if (document.getElementById('penugasanFilterWilayah')) document.getElementById('penugasanFilterWilayah').value = 'ALL';
+
+      // 5. Kembalikan Posisi Navigasi ke Tab Beranda (Dashboard)
+      if (typeof switchTab === 'function') {
+        switchTab('dashboard');
+      }
+
+      // 6. Sinkronisasi Perenderan Seluruh Komponen Tampilan
+      if (typeof updateDynamicDashboard === 'function') updateDynamicDashboard();
+      if (typeof renderFullTable === 'function') renderFullTable();
+      if (typeof renderPrintPreview === 'function') renderPrintPreview();
+      if (typeof renderPenugasanData === 'function') renderPenugasanData();
     }
 
     /**
