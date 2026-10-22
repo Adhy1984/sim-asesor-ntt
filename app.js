@@ -2655,12 +2655,12 @@ function getClientDeviceInfo() {
       const sample1 = [
         1, '70003201', 'UPTD SD NEGERI BUKRUR', 'SD', 'KABUPATEN ALOR',
         '12345', 'RUDI', 'ALOR', '43218', 'ANTON', 'SABU RAIJUA',
-        'SELESAI', 'SELESAI', 'SELESAI', 'Tahap 1'
+        'V', 'V', 'V', 'Tahap 1'
       ];
       const sample2 = [
         2, '50305812', 'SD GMIT PROBUR I', 'SD', 'KABUPATEN ALOR',
         '66778', 'YON', 'SLEMAN', '55541', 'SATRIA', 'SABU RAIJUA',
-        'SELESAI', 'BELUM', 'SELESAI', 'Tahap 1'
+        'V', '-', 'V', 'Tahap 1'
       ];
 
       try {
@@ -2953,9 +2953,9 @@ function getClientDeviceInfo() {
               nia2: String(r[8] || '').trim(),
               namaAsesor2: String(r[9] || '').trim(),
               kabAsesor2: String(r[10] || '').trim(),
-              status1: String(r[11] || 'BELUM').toUpperCase().includes('SELESAI') ? 'SELESAI' : 'BELUM',
-              status2: String(r[12] || 'BELUM').toUpperCase().includes('SELESAI') ? 'SELESAI' : 'BELUM',
-              statusKelompok: String(r[13] || 'BELUM').toUpperCase().includes('SELESAI') ? 'SELESAI' : 'BELUM',
+              status1: (function(v) { var s = String(v || '').trim().toUpperCase(); return (s === 'V' || s === '✓' || s === '✔' || s === '1' || s === 'TRUE' || s.indexOf('SELESAI') !== -1) ? 'SELESAI' : 'BELUM'; })(r[11]),
+              status2: (function(v) { var s = String(v || '').trim().toUpperCase(); return (s === 'V' || s === '✓' || s === '✔' || s === '1' || s === 'TRUE' || s.indexOf('SELESAI') !== -1) ? 'SELESAI' : 'BELUM'; })(r[12]),
+              statusKelompok: (function(v) { var s = String(v || '').trim().toUpperCase(); return (s === 'V' || s === '✓' || s === '✔' || s === '1' || s === 'TRUE' || s.indexOf('SELESAI') !== -1) ? 'SELESAI' : 'BELUM'; })(r[13]),
               tahap: String(r[14] || 'Tahap 1').trim(),
               rowNumber: mode === 'replace' ? (idx + 2) : (APP_STATE.items.length + idx + 2)
             };
@@ -3606,11 +3606,14 @@ function getClientDeviceInfo() {
         let grandTotalPenilaian = 0;
         let grandTotalSelesai = 0;
         let grandTotalBelum = 0;
+        let grandTotalSekolah = 0;
 
         asesorList.forEach(function(a) {
           let totalBeban = 0;
           let selesai = 0;
           let belum = 0;
+          let uniqueSchools = {};
+          let totalSekolah = 0;
 
           scopedSchools.forEach(function(s) {
             const isAsesor1 = ((s.namaAsesor1 && s.namaAsesor1.trim().toUpperCase() === a.id) || (s.nia1 && s.nia1.trim().toUpperCase() === a.id));
@@ -3624,6 +3627,13 @@ function getClientDeviceInfo() {
             if (isAsesor2) {
               totalBeban += 1;
               if (s.status2 === 'SELESAI') selesai++; else belum++;
+            }
+            if (isAsesor1 || isAsesor2) {
+              const sKey = String(s.npsn || s.namaSekolah || s.no).trim();
+              if (sKey && !uniqueSchools[sKey]) {
+                uniqueSchools[sKey] = true;
+                totalSekolah++;
+              }
             }
           });
 
@@ -3642,6 +3652,7 @@ function getClientDeviceInfo() {
           grandTotalPenilaian += totalBeban;
           grandTotalSelesai += selesai;
           grandTotalBelum += belum;
+          grandTotalSekolah += totalSekolah;
 
           rekapAsesor.push({
             id: a.id,
@@ -3649,6 +3660,7 @@ function getClientDeviceInfo() {
             nia: a.nia,
             hp: a.hp || '-',
             kabupaten: a.kabupaten || '-',
+            totalSekolah: totalSekolah,
             totalPenilaian: totalBeban,
             selesai: selesai,
             belum: belum
@@ -3660,22 +3672,23 @@ function getClientDeviceInfo() {
         const globalRate = grandTotalPenilaian > 0 ? Math.round((grandTotalSelesai / grandTotalPenilaian) * 100) : 0;
         document.getElementById('printRateMeta').textContent = globalRate + '% (' + grandTotalSelesai + '/' + grandTotalPenilaian + ' Penilaian)';
 
-        // Pasang thead 6 kolom
+        // Pasang thead 7 kolom
         if (thead) {
           thead.innerHTML = 
             '<tr>' +
               '<th style="width: 35px;" class="center">No</th>' +
-              '<th style="min-width: 200px;">Nama Asesor</th>' +
-              '<th style="min-width: 150px;">Asal Kabupaten Asesor</th>' +
-              '<th style="width: 120px;" class="center">Total Penilaian</th>' +
-              '<th style="width: 150px;" class="center">Jumlah Penilaian yang Sudah Selesai</th>' +
-              '<th style="width: 150px;" class="center">Jumlah Penilaian yang Belum Selesai</th>' +
+              '<th style="min-width: 190px;">Nama Asesor</th>' +
+              '<th style="min-width: 140px;">Asal Kabupaten Asesor</th>' +
+              '<th style="width: 110px;" class="center">Jumlah Sekolah yang Dinilai</th>' +
+              '<th style="width: 100px;" class="center">Total Penilaian</th>' +
+              '<th style="width: 140px;" class="center">Jumlah Penilaian yang Sudah Selesai</th>' +
+              '<th style="width: 140px;" class="center">Jumlah Penilaian yang Belum Selesai</th>' +
             '</tr>';
         }
 
         tbody.innerHTML = '';
         if (rekapAsesor.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2.5rem; color: #64748b;">Tidak ada data rekapitulasi asesor yang sesuai kriteria filter.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2.5rem; color: #64748b;">Tidak ada data rekapitulasi asesor yang sesuai kriteria filter.</td></tr>';
           if (tfoot) tfoot.style.display = 'none';
           return;
         }
@@ -3694,6 +3707,7 @@ function getClientDeviceInfo() {
               hpMarkup +
             '</td>' +
             '<td>' + item.kabupaten + '</td>' +
+            '<td class="center nowrap" style="font-weight:700; font-size:0.85rem; color: #0f172a;">' + item.totalSekolah + ' Sekolah</td>' +
             '<td class="center nowrap" style="font-weight:700; font-size:0.85rem;">' + item.totalPenilaian + '</td>' +
             '<td class="center nowrap"><span class="print-badge selesai" style="font-size:0.75rem; padding: 3px 8px;">' + item.selesai + ' Selesai</span></td>' +
             '<td class="center nowrap"><span class="print-badge ' + (item.belum > 0 ? 'belum' : 'selesai') + '" style="font-size:0.75rem; padding: 3px 8px;">' + item.belum + ' Belum</span></td>';
@@ -3706,6 +3720,7 @@ function getClientDeviceInfo() {
           tfoot.innerHTML = 
             '<tr style="background:#f1f5f9; font-weight:700; border-top: 2px solid #64748b;">' +
               '<td colspan="3" style="text-align:right; padding-right: 1rem; font-weight:700; letter-spacing:0.02em;">TOTAL REKAPITULASI (' + rekapAsesor.length + ' ASESOR):</td>' +
+              '<td class="center nowrap" style="font-weight:800; font-size:0.9rem; color: #0f172a;">' + grandTotalSekolah + ' Sekolah</td>' +
               '<td class="center nowrap" style="font-weight:800; font-size:0.9rem;">' + grandTotalPenilaian + '</td>' +
               '<td class="center nowrap"><span class="print-badge selesai" style="font-weight:800; font-size:0.75rem; padding: 3px 8px;">' + grandTotalSelesai + ' Selesai</span></td>' +
               '<td class="center nowrap"><span class="print-badge ' + (grandTotalBelum > 0 ? 'belum' : 'selesai') + '" style="font-weight:800; font-size:0.75rem; padding: 3px 8px;">' + grandTotalBelum + ' Belum</span></td>' +
@@ -3902,6 +3917,9 @@ function getClientDeviceInfo() {
           let selesai = 0;
           let belum = 0;
 
+          let uniqueSchools = {};
+          let totalSekolah = 0;
+
           scopedSchools.forEach(function(s) {
             const isAsesor1 = ((s.namaAsesor1 && s.namaAsesor1.trim().toUpperCase() === a.id) || (s.nia1 && s.nia1.trim().toUpperCase() === a.id));
             const isAsesor2 = ((s.namaAsesor2 && s.namaAsesor2.trim().toUpperCase() === a.id) || (s.nia2 && s.nia2.trim().toUpperCase() === a.id));
@@ -3914,6 +3932,13 @@ function getClientDeviceInfo() {
             if (isAsesor2) {
               totalBeban += 1;
               if (s.status2 === 'SELESAI') selesai++; else belum++;
+            }
+            if (isAsesor1 || isAsesor2) {
+              const sKey = String(s.npsn || s.namaSekolah || s.no).trim();
+              if (sKey && !uniqueSchools[sKey]) {
+                uniqueSchools[sKey] = true;
+                totalSekolah++;
+              }
             }
           });
 
@@ -3931,6 +3956,7 @@ function getClientDeviceInfo() {
             nama: a.nama,
             nia: a.nia,
             kabupaten: a.kabupaten || '-',
+            totalSekolah: totalSekolah,
             totalPenilaian: totalBeban,
             selesai: selesai,
             belum: belum
@@ -3947,6 +3973,7 @@ function getClientDeviceInfo() {
           'Nama Asesor',
           'NIA Asesor',
           'Asal Kabupaten Asesor',
+          'Jumlah Sekolah yang Dinilai',
           'Total Penilaian',
           'Jumlah Penilaian yang Sudah Selesai',
           'Jumlah Penilaian yang Belum Selesai'
@@ -3959,6 +3986,7 @@ function getClientDeviceInfo() {
             item.nama || '-',
             String(item.nia || '-'),
             item.kabupaten || '-',
+            Number(item.totalSekolah) || 0,
             Number(item.totalPenilaian) || 0,
             Number(item.selesai) || 0,
             Number(item.belum) || 0
@@ -3988,6 +4016,7 @@ function getClientDeviceInfo() {
             '"' + String(item.nama || '').replace(/"/g, '""') + '"',
             '"' + String(item.nia || '') + '"',
             '"' + String(item.kabupaten || '').replace(/"/g, '""') + '"',
+            item.totalSekolah,
             item.totalPenilaian,
             item.selesai,
             item.belum
