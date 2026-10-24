@@ -3855,10 +3855,45 @@ function getClientDeviceInfo() {
     }
 
     /**
-     * Memicu Fungsi Cetak Standar Browser (Ctrl+P / Direct Print)
+     * Memicu Fungsi Cetak Standar Browser (Ctrl+P / Direct Print) dengan Penamaan File PDF Berisi Tanggal Download
      */
     function triggerPrint() {
+      // 1. Sinkronkan tanggal cetak/unduh terbaru pada metadata lembar dokumen
+      const now = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const todayStr = now.toLocaleDateString('id-ID', options);
+      const printDateEl = document.getElementById('printDateMeta');
+      if (printDateEl) printDateEl.textContent = todayStr;
+      const sigDateEl = document.getElementById('sigDateLabel');
+      if (sigDateEl) sigDateEl.textContent = 'Kupang, ' + now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+
+      // 2. Format tanggal ISO YYYY-MM-DD untuk nama file hasil download PDF
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const dateStr = year + '-' + month + '-' + day;
+
+      const formatDokumen = document.getElementById('printFormatDokumen') ? document.getElementById('printFormatDokumen').value : 'LENGKAP';
+      const filePrefix = formatDokumen === 'RINGKAS' 
+        ? 'Rekapitulasi_Penilaian_Asesor_BAN_PDM_NTT_' 
+        : 'Laporan_Penilaian_Asesor_BAN_PDM_NTT_';
+
+      const originalTitle = document.title;
+      document.title = filePrefix + dateStr;
+
+      // Kembalikan judul halaman semula setelah dialog cetak/simpan PDF selesai
+      const restoreTitle = function() {
+        document.title = originalTitle;
+        window.removeEventListener('afterprint', restoreTitle);
+      };
+      window.addEventListener('afterprint', restoreTitle);
+
       window.print();
+
+      // Fallback timer jika browser tidak memicu event afterprint
+      setTimeout(function() {
+        document.title = originalTitle;
+      }, 1500);
     }
 
     /**
@@ -4394,10 +4429,39 @@ function getClientDeviceInfo() {
     }
 
     /**
-     * Memicu Cetak Dokumen Penugasan Asesor ke PDF (A4 Landscape)
+     * Memicu Cetak Dokumen Penugasan Asesor ke PDF (A4 Landscape) dengan Penamaan File PDF Berisi Tanggal Download
      */
     function triggerPrintPenugasan() {
+      // 1. Sinkronkan tanggal cetak/unduh terbaru pada metadata penugasan
+      const now = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const todayStr = now.toLocaleDateString('id-ID', options);
+      const metaDate = document.getElementById('penugasanMetaDate');
+      if (metaDate) metaDate.textContent = todayStr;
+      const sigDateEl = document.getElementById('penugasanSigDate');
+      if (sigDateEl) sigDateEl.textContent = 'Kupang, ' + now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+
+      // 2. Format tanggal ISO YYYY-MM-DD untuk nama file hasil download PDF
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const dateStr = year + '-' + month + '-' + day;
+
+      const originalTitle = document.title;
+      document.title = 'Rekapitulasi_Penugasan_Asesor_BAN_PDM_NTT_' + dateStr;
+
+      const restoreTitle = function() {
+        document.title = originalTitle;
+        window.removeEventListener('afterprint', restoreTitle);
+      };
+      window.addEventListener('afterprint', restoreTitle);
+
       window.print();
+
+      // Fallback timer jika browser tidak memicu event afterprint
+      setTimeout(function() {
+        document.title = originalTitle;
+      }, 1500);
     }
 
     /**
