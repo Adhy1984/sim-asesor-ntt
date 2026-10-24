@@ -56,7 +56,7 @@
         if (rawRole === 'user' && rawHash !== 'dashboard') {
           return;
         }
-        var tabKey = (rawHash === 'penugasan' || rawHash === 'data' || rawHash === 'print') ? rawHash :
+        var tabKey = (rawHash === 'penugasan' || rawHash === 'data' || rawHash === 'print' || rawHash === 'asesor') ? rawHash :
                      (rawHash.indexOf('status-') === 0 ? 'data' : '');
         if (tabKey) {
           document.documentElement.setAttribute('data-initial-tab', tabKey);
@@ -72,6 +72,8 @@
     html[data-initial-tab="data"] #tab-data { display: block !important; }
     html[data-initial-tab="print"] #tab-dashboard { display: none !important; }
     html[data-initial-tab="print"] #tab-print { display: block !important; }
+    html[data-initial-tab="asesor"] #tab-dashboard { display: none !important; }
+    html[data-initial-tab="asesor"] #tab-asesor { display: block !important; }
   </style>
 </head>
 <body class="login-active">
@@ -182,6 +184,10 @@
               <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               <span>Cetak Laporan</span>
             </a>
+            <a href="#asesor" id="navTabAsesor" class="nav-dropdown-item" onclick="selectNavTab('asesor', event)">
+              <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>Data Asesor</span>
+            </a>
           </div>
         </div>
       </nav>
@@ -210,10 +216,7 @@
               <div class="user-dropdown-role-tag" id="userDropdownRoleTag">Peran: Administrator Sistem</div>
             </div>
             <!-- Menu Khusus Administrator -->
-              <a href="#modal-db-asesor" class="user-dropdown-action-btn" onclick="openDbAsesorModal(); closeAllDropdowns(); if(event) event.preventDefault();" title="Data Base Asesor (DBAsesor)">
-                <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
-                <span>Data Base Asesor (DBAsesor)</span>
-              </a>
+            <div id="adminDropdownActions" class="admin-dropdown-actions" style="display: none;">
               <a href="#modal-user" class="user-dropdown-action-btn" onclick="openUserModal(); closeAllDropdowns(); if(event) event.preventDefault();" title="Kelola Pengguna (DataUser)">
                 <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 <span>Kelola Pengguna (DataUser)</span>
@@ -295,6 +298,15 @@
             <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
           </span>
         </a>
+        <a href="#asesor" id="mobileNavTabAsesor" class="mobile-nav-btn" onclick="switchTab('asesor', event); toggleMobileDrawer(false);">
+          <div class="mobile-nav-icon-box">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <span class="mobile-nav-label">Data Asesor</span>
+          <span class="mobile-nav-chevron">
+            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </span>
+        </a>
       </nav>
 
       <div class="mobile-drawer-bottom-section">
@@ -311,12 +323,6 @@
 
           <!-- Menu Khusus Administrator Mobile -->
           <div id="mobileAdminActions" class="mobile-admin-actions" style="display: none;">
-            <a href="#modal-db-asesor" class="btn-mobile-admin-action" onclick="openDbAsesorModal(); toggleMobileDrawer(false); if(event) event.preventDefault();" title="Data Base Asesor (DBAsesor)">
-              <div class="admin-action-icon-box">
-                <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
-              </div>
-              <span>Data Base Asesor (DBAsesor)</span>
-            </a>
             <a href="#modal-user" class="btn-mobile-admin-action" onclick="openUserModal(); toggleMobileDrawer(false); if(event) event.preventDefault();" title="Kelola Pengguna (DataUser)">
               <div class="admin-action-icon-box">
                 <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -976,6 +982,69 @@
       </div>
     </div>
 
+    <!-- ==========================================================================
+         TAB 5: DATA ASESOR (SHEET DBASESOR) - v1.0.66
+         ========================================================================== -->
+    <div id="tab-asesor" class="tab-content">
+      <div class="print-control-panel" style="margin-bottom: 1.25rem;">
+        <div class="print-control-header">
+          <div class="print-control-title">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Data Asesor BAN PDM Provinsi NTT
+          </div>
+          <div class="btn-action-group">
+            <button type="button" class="btn-secondary" onclick="fetchDbAsesorList(true)" title="Segarkan data dari sheet DBAsesor">
+              <svg viewBox="0 0 24 24"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+              Segarkan Data
+            </button>
+          </div>
+        </div>
+
+        <div class="print-filter-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+          <div class="filter-item">
+            <label for="dbAsesorSearchInput">Pencarian NIA, Nama Asesor, atau Kabupaten</label>
+            <div style="position: relative;">
+              <input type="text" id="dbAsesorSearchInput" class="filter-select" placeholder="Ketik kata kunci pencarian..." oninput="filterDbAsesorTable()">
+            </div>
+          </div>
+          <div class="filter-item">
+            <label for="dbAsesorFilterKab">Filter Kabupaten / Kota</label>
+            <select id="dbAsesorFilterKab" class="filter-select" onchange="filterDbAsesorTable()">
+              <option value="">Semua Kabupaten / Kota</option>
+            </select>
+          </div>
+          <div class="filter-item" style="display: flex; align-items: flex-end; padding-bottom: 4px;">
+            <div style="font-size: 0.85rem; color: #475569; font-weight: 600;">
+              Total: <strong id="dbAsesorTotalCount" style="color: #0f172a; font-size: 1rem;">-</strong> Asesor
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Container Tabel Data Asesor (Tampilan Sesuai Gambar Lampiran) -->
+      <div class="table-container" style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <table class="data-table asesor-view-table" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #1e293b;">
+              <th style="padding: 12px 14px; text-align: left; font-weight: 700; width: 140px;">NIA</th>
+              <th style="padding: 12px 14px; text-align: left; font-weight: 700;">Nama</th>
+              <th style="padding: 12px 14px; text-align: left; font-weight: 700; width: 160px;">Status</th>
+              <th style="padding: 12px 14px; text-align: left; font-weight: 700; width: 200px;">Kabupaten/Kota</th>
+              <th style="padding: 12px 14px; text-align: center; font-weight: 700; width: 180px;">Sedia Bertugas 2026</th>
+              <th style="padding: 12px 14px; text-align: center; font-weight: 700; width: 100px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyDbAsesor">
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2.5rem; color: #64748b;">
+                Memuat data asesor...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </main>
 
   <!-- ==========================================================================
@@ -1374,79 +1443,82 @@
   <!-- ==========================================================================
        MODAL DATABASE ASESOR (SHEET DBASESOR) - v1.0.65
        ========================================================================== -->
-  <div class="modal-backdrop" id="modalDbAsesor">
-    <div class="modal-window modal-window-lg" style="max-width: 1050px; width: 96%;">
+  <div class="modal-backdrop" id="modalEditAsesor">
+    <div class="modal-window modal-window-lg" style="max-width: 680px; width: 95%;">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
-          <div class="modal-icon-badge" style="background: rgba(16, 185, 129, 0.12); color: #059669;">
-            <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
+          <div class="modal-icon-badge" style="background: rgba(37, 99, 235, 0.12); color: #2563eb;">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </div>
           <div>
-            <h3 class="modal-title" style="margin: 0; font-size: 1.05rem;">Data Base Asesor (DBAsesor)</h3>
-            <span style="font-size: 0.725rem; color: #64748b;">Direktori resmi data induk asesor BAN PDM Provinsi NTT, kontak WhatsApp, dan profil penugasan</span>
+            <h3 class="modal-title" style="margin: 0; font-size: 1.05rem;">Edit Data Asesor</h3>
+            <span style="font-size: 0.725rem; color: #64748b;">Perbarui data profil dan status kesediaan bertugas asesor</span>
           </div>
         </div>
-        <button class="modal-close-btn" onclick="closeDbAsesorModal()">&times;</button>
+        <button class="modal-close-btn" onclick="closeEditAsesorModal()">&times;</button>
       </div>
+
+      <form id="formEditAsesor" onsubmit="submitEditAsesor(event)">
+        <input type="hidden" id="editAsesorRowNumber">
 
       <div class="modal-body" style="padding: 1.25rem 1.5rem;">
-        <!-- Control Toolbar: Cari, Filter Kabupaten, Filter Jenjang, Total Counter, Tombol Refresh -->
-        <div class="db-asesor-toolbar">
-          <div class="db-asesor-filters">
-            <div style="font-size: 0.825rem; color: #334155; font-weight: 600;">
-              Total: <strong id="dbAsesorTotalCount" style="color: #0f172a;">-</strong>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label for="editAsesorNia" style="font-size: 0.78rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; display: block;">NIA (Nomor Induk Asesor) *</label>
+              <input type="text" id="editAsesorNia" class="form-input" required placeholder="Contoh: 5371025001" style="width: 100%; font-family: monospace; font-weight: 600;">
             </div>
-            <div class="db-asesor-search-box">
-              <input type="text" id="dbAsesorSearchInput" placeholder="Cari nama, NIA, kab, instansi, HP..." oninput="filterDbAsesorTable()">
-              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <div class="form-group">
+              <label for="editAsesorNama" style="font-size: 0.78rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; display: block;">Nama Lengkap Asesor *</label>
+              <input type="text" id="editAsesorNama" class="form-input" required placeholder="Nama lengkap beserta gelar" style="width: 100%;">
             </div>
-            <select id="dbAsesorFilterKab" class="db-select-filter" onchange="filterDbAsesorTable()">
-              <option value="">Semua Kabupaten</option>
-            </select>
-            <select id="dbAsesorFilterJenjang" class="db-select-filter" onchange="filterDbAsesorTable()">
-              <option value="">Semua Jenjang</option>
-            </select>
-          </div>
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <button type="button" class="btn-refresh-log" onclick="fetchDbAsesorList(true)" title="Segarkan data dari sheet DBAsesor">
-              <svg viewBox="0 0 24 24"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-              <span>Segarkan</span>
-            </button>
+            <div class="form-group">
+              <label for="editAsesorStatus" style="font-size: 0.78rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; display: block;">Status Asesor *</label>
+              <select id="editAsesorStatus" class="form-input" style="width: 100%;">
+                <option value="Sertifikat Aktif">Sertifikat Aktif</option>
+                <option value="Terverifikasi">Terverifikasi</option>
+                <option value="Aktif">Aktif</option>
+                <option value="Tidak Aktif">Tidak Aktif</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="editAsesorKab" style="font-size: 0.78rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; display: block;">Kabupaten / Kota *</label>
+              <input type="text" id="editAsesorKab" class="form-input" required placeholder="Contoh: KOTA KUPANG" style="width: 100%;">
+            </div>
+            <div class="form-group">
+              <label for="editAsesorSedia" style="font-size: 0.78rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; display: block;">Sedia Bertugas 2026 *</label>
+              <select id="editAsesorSedia" class="form-input" style="width: 100%; font-weight: 600; color: #047857;">
+                <option value="Bersedia">Bersedia</option>
+                <option value="Tidak Bersedia">Tidak Bersedia</option>
+                <option value="Belum Konfirmasi">Belum Konfirmasi</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="editAsesorHp" style="font-size: 0.78rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; display: block;">No. HP / WhatsApp</label>
+              <input type="text" id="editAsesorHp" class="form-input" placeholder="08xxxxxxxxxx" style="width: 100%;">
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+              <label for="editAsesorInstansi" style="font-size: 0.78rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; display: block;">Instansi / Unit Kerja</label>
+              <input type="text" id="editAsesorInstansi" class="form-input" placeholder="Nama instansi atau perguruan tinggi" style="width: 100%;">
+            </div>
+            <div class="form-group">
+              <label for="editAsesorJenjang" style="font-size: 0.78rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; display: block;">Jenjang</label>
+              <input type="text" id="editAsesorJenjang" class="form-input" placeholder="PAUD / Dikdas / Dikmen" style="width: 100%;">
+            </div>
+            <div class="form-group">
+              <label for="editAsesorPeran" style="font-size: 0.78rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; display: block;">Peran</label>
+              <input type="text" id="editAsesorPeran" class="form-input" placeholder="Asesor 1 / Asesor 2" style="width: 100%;">
+            </div>
           </div>
         </div>
 
-        <!-- Tabel Responsif Database Asesor -->
-        <div class="table-container" style="max-height: 460px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px;">
-          <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
-            <thead style="position: sticky; top: 0; background: #0f172a; color: #ffffff; z-index: 2;">
-              <tr>
-                <th style="padding: 9px 8px; text-align: center; width: 40px;">No</th>
-                <th style="padding: 9px 10px; text-align: left; width: 100px;">NIA</th>
-                <th style="padding: 9px 12px; text-align: left;">Nama Lengkap Asesor</th>
-                <th style="padding: 9px 10px; text-align: left;">Asal Kabupaten</th>
-                <th style="padding: 9px 12px; text-align: left;">Instansi / Unit Kerja</th>
-                <th style="padding: 9px 8px; text-align: center; width: 85px;">Jenjang</th>
-                <th style="padding: 9px 8px; text-align: center; width: 85px;">Peran</th>
-                <th style="padding: 9px 10px; text-align: center; width: 130px;">No. HP / WA</th>
-                <th style="padding: 9px 8px; text-align: center; width: 80px;">Status</th>
-                <th style="padding: 9px 10px; text-align: center; width: 110px;">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="tbodyDbAsesor">
-              <tr>
-                <td colspan="10" style="text-align: center; padding: 2rem; color: #64748b;">
-                  Memuat data dari sheet DBAsesor...
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="modal-footer" style="padding: 0.85rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center;">
+          <button type="button" class="btn-secondary" onclick="closeEditAsesorModal()">Batal</button>
+          <button type="submit" id="btnSaveEditAsesor" class="btn-primary" style="background: #2563eb; color: #ffffff; display: inline-flex; align-items: center; gap: 0.4rem;">
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span id="labelSaveEditAsesor">Simpan</span>
+          </button>
         </div>
-      </div>
-
-      <div class="modal-footer" style="padding: 0.85rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 0.72rem; color: #64748b;">Sumber Data: Tab <code>DBAsesor</code> &bull; Terintegrasi Kinerja Penugasan</span>
-        <button type="button" class="btn-secondary" onclick="closeDbAsesorModal()">Tutup</button>
-      </div>
+      </form>
     </div>
   </div>
 

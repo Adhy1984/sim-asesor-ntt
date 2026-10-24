@@ -608,10 +608,12 @@ function getClientDeviceInfo() {
       const navData = document.getElementById('navTabData');
       const navPenugasan = document.getElementById('navTabPenugasan');
       const navPrint = document.getElementById('navTabPrint');
+      const navAsesor = document.getElementById('navTabAsesor');
 
       const mobileNavData = document.getElementById('mobileNavTabData');
       const mobileNavPenugasan = document.getElementById('mobileNavTabPenugasan');
       const mobileNavPrint = document.getElementById('mobileNavTabPrint');
+      const mobileNavAsesor = document.getElementById('mobileNavTabAsesor');
 
       if (roleStr === 'user') {
         const txt = nama ? 'User: ' + nama : 'User: Pengguna';
@@ -626,10 +628,12 @@ function getClientDeviceInfo() {
         if (navData) navData.style.display = 'none';
         if (navPenugasan) navPenugasan.style.display = 'none';
         if (navPrint) navPrint.style.display = 'none';
+        if (navAsesor) navAsesor.style.display = 'none';
 
         if (mobileNavData) mobileNavData.style.display = 'none';
         if (mobileNavPenugasan) mobileNavPenugasan.style.display = 'none';
         if (mobileNavPrint) mobileNavPrint.style.display = 'none';
+        if (mobileNavAsesor) mobileNavAsesor.style.display = 'none';
 
         switchTab('dashboard');
       } else {
@@ -645,10 +649,12 @@ function getClientDeviceInfo() {
         if (navData) navData.style.display = 'flex';
         if (navPenugasan) navPenugasan.style.display = 'flex';
         if (navPrint) navPrint.style.display = 'flex';
+        if (navAsesor) navAsesor.style.display = 'flex';
 
         if (mobileNavData) mobileNavData.style.display = 'flex';
         if (mobileNavPenugasan) mobileNavPenugasan.style.display = 'flex';
         if (mobileNavPrint) mobileNavPrint.style.display = 'flex';
+        if (mobileNavAsesor) mobileNavAsesor.style.display = 'flex';
       }
 
       // Perbarui tabel dashboard agar status badge menyesuaikan izin
@@ -3753,7 +3759,7 @@ function getClientDeviceInfo() {
       if (!tbody) return;
 
       if (!list || list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 2rem; color: #64748b;">' +
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2.5rem; color: #64748b;">' +
           'Tidak ada data asesor yang sesuai dengan filter atau kata kunci pencarian.' +
         '</td></tr>';
         return;
@@ -3762,47 +3768,142 @@ function getClientDeviceInfo() {
       let html = '';
       for (let i = 0; i < list.length; i++) {
         const item = list[i];
-        const rawHp = String(item.noHp || '').trim();
-        const cleanHpDigits = rawHp.replace(/\D/g, '');
-        let waLinkHtml = '-';
+        const safeNia = escapeHtml(item.nia || '-');
+        const safeNama = escapeHtml(item.nama || '-');
+        const safeStatus = escapeHtml(item.status || 'Terverifikasi');
+        const safeKab = escapeHtml(item.kabupaten || '-');
+        const sediaTxt = escapeHtml(item.sediaBertugas || 'Bersedia');
+        const isBersedia = !sediaTxt.toLowerCase().includes('tidak');
+        const badgeClass = isBersedia ? 'badge-sedia-bertugas' : 'badge-sedia-bertugas tidak-bersedia';
 
-        if (cleanHpDigits.length >= 9) {
-          let intlWa = cleanHpDigits;
-          if (intlWa.startsWith('0')) intlWa = '62' + intlWa.substring(1);
-          waLinkHtml = '<a href="https://wa.me/' + intlWa + '" target="_blank" rel="noopener noreferrer" class="btn-wa-link" title="Kirim pesan WhatsApp ke ' + escapeHtml(item.nama) + '">' +
-            '<svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>' +
-            '<span>' + escapeHtml(rawHp) + '</span>' +
-          '</a>';
-        } else if (rawHp && rawHp !== '-') {
-          waLinkHtml = '<span>' + escapeHtml(rawHp) + '</span>';
-        }
-
-        const isAktif = String(item.status || '').toLowerCase().includes('aktif');
-        const statusBadgeClass = isAktif ? 'status-badge-selesai' : 'status-badge-belum';
-
-        const safeNia = escapeHtml(item.nia || '');
-        const safeNama = escapeHtml(item.nama || '');
-
-        html += '<tr style="border-bottom: 1px solid #e2e8f0; transition: background 0.15s ease;" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'transparent\'">' +
-          '<td style="padding: 7px 8px; text-align: center; color: #64748b;">' + (i + 1) + '</td>' +
-          '<td style="padding: 7px 10px; font-weight: 700; color: #1e3a8a; font-family: monospace;">' + safeNia + '</td>' +
-          '<td style="padding: 7px 12px; font-weight: 600; color: #0f172a;">' + safeNama + '</td>' +
-          '<td style="padding: 7px 10px; color: #334155;">' + escapeHtml(item.kabupaten || '-') + '</td>' +
-          '<td style="padding: 7px 12px; color: #475569;">' + escapeHtml(item.instansi || '-') + '</td>' +
-          '<td style="padding: 7px 8px; text-align: center;"><span class="status-badge status-badge-info" style="font-size: 0.68rem; padding: 2px 6px;">' + escapeHtml(item.jenjang || '-') + '</span></td>' +
-          '<td style="padding: 7px 8px; text-align: center;"><span class="status-badge status-badge-purple" style="font-size: 0.68rem; padding: 2px 6px;">' + escapeHtml(item.peran || 'Asesor') + '</span></td>' +
-          '<td style="padding: 7px 10px; text-align: center;">' + waLinkHtml + '</td>' +
-          '<td style="padding: 7px 8px; text-align: center;"><span class="status-badge ' + statusBadgeClass + '" style="font-size: 0.68rem; padding: 2px 6px;">' + escapeHtml(item.status || 'Aktif') + '</span></td>' +
-          '<td style="padding: 7px 10px; text-align: center;">' +
-            '<button type="button" class="btn-profile-view" onclick="openProfilAsesorModal(\'' + safeNia + '\', \'' + safeNama.replace(/'/g, "\\'") + '\')" title="Buka profil lengkap ' + safeNama + '">' +
-              '<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
-              '<span>Profil</span>' +
-            '</button>' +
+        html += '<tr style="border-bottom: 1px solid #e2e8f0;">' +
+          '<td class="asesor-nia-cell">' + safeNia + '</td>' +
+          '<td class="asesor-nama-cell">' + safeNama + '</td>' +
+          '<td>' + safeStatus + '</td>' +
+          '<td>' + safeKab + '</td>' +
+          '<td style="text-align: center;"><span class="' + badgeClass + '">' + sediaTxt + '</span></td>' +
+          '<td style="text-align: center;">' +
+            '<button type="button" class="btn-table-edit" onclick="openEditAsesorModal(\'' + safeNia + '\', ' + (item.rowNumber || (i + 2)) + ')" title="Edit data ' + safeNama + '">Edit</button>' +
           '</td>' +
         '</tr>';
       }
 
       tbody.innerHTML = html;
+    }
+
+    function openEditAsesorModal(niaKey, rowNum) {
+      const all = DB_ASESOR_STATE.asesors || [];
+      let found = null;
+      if (rowNum && rowNum > 0) {
+        found = all.find(function(a) { return a.rowNumber === rowNum; });
+      }
+      if (!found && niaKey && niaKey !== '-') {
+        found = all.find(function(a) { return String(a.nia || '').trim() === String(niaKey).trim(); });
+      }
+
+      if (!found) {
+        showToast('Data asesor tidak ditemukan untuk diedit.');
+        return;
+      }
+
+      const modal = document.getElementById('modalEditAsesor');
+      if (!modal) return;
+
+      document.getElementById('editAsesorRowNumber').value = found.rowNumber || '';
+      document.getElementById('editAsesorNia').value = found.nia && found.nia !== '-' ? found.nia : '';
+      document.getElementById('editAsesorNama').value = found.nama && found.nama !== '-' ? found.nama : '';
+      document.getElementById('editAsesorStatus').value = found.status || 'Sertifikat Aktif';
+      document.getElementById('editAsesorKab').value = found.kabupaten && found.kabupaten !== '-' ? found.kabupaten : '';
+      document.getElementById('editAsesorSedia').value = found.sediaBertugas || 'Bersedia';
+      document.getElementById('editAsesorHp').value = found.noHp && found.noHp !== '-' ? found.noHp : '';
+      document.getElementById('editAsesorInstansi').value = found.instansi && found.instansi !== '-' ? found.instansi : '';
+      document.getElementById('editAsesorJenjang').value = found.jenjang && found.jenjang !== '-' ? found.jenjang : '';
+      document.getElementById('editAsesorPeran').value = found.peran && found.peran !== '-' ? found.peran : '';
+
+      modal.classList.add('active');
+    }
+
+    function closeEditAsesorModal() {
+      const modal = document.getElementById('modalEditAsesor');
+      if (modal) modal.classList.remove('active');
+    }
+
+    function submitEditAsesor(e) {
+      if (e && e.preventDefault) e.preventDefault();
+
+      const rowNumber = parseInt(document.getElementById('editAsesorRowNumber').value, 10);
+      const nia = document.getElementById('editAsesorNia').value.trim();
+      const nama = document.getElementById('editAsesorNama').value.trim();
+      const status = document.getElementById('editAsesorStatus').value.trim();
+      const kabupaten = document.getElementById('editAsesorKab').value.trim();
+      const sediaBertugas = document.getElementById('editAsesorSedia').value.trim();
+      const noHp = document.getElementById('editAsesorHp').value.trim();
+      const instansi = document.getElementById('editAsesorInstansi').value.trim();
+      const jenjang = document.getElementById('editAsesorJenjang').value.trim();
+      const peran = document.getElementById('editAsesorPeran').value.trim();
+
+      if (!nia || !nama || !kabupaten) {
+        showToast('Mohon lengkapi NIA, Nama, dan Kabupaten.');
+        return;
+      }
+
+      const payload = {
+        rowNumber: rowNumber,
+        nia: nia,
+        nama: nama,
+        status: status,
+        kabupaten: kabupaten,
+        sediaBertugas: sediaBertugas,
+        noHp: noHp,
+        instansi: instansi,
+        jenjang: jenjang,
+        peran: peran
+      };
+
+      const btnSave = document.getElementById('btnSaveEditAsesor');
+      const lblSave = document.getElementById('labelSaveEditAsesor');
+      if (btnSave) btnSave.disabled = true;
+      if (lblSave) lblSave.textContent = 'Menyimpan...';
+
+      // Mode REST API / Vercel
+      fetch(APP_STATE.apiBaseUrl ? (APP_STATE.apiBaseUrl + '?action=updateDbAsesor') : '?action=updateDbAsesor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'updateDbAsesor', asesorData: payload, currentUser: APP_STATE.currentUser })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(res) {
+        if (btnSave) btnSave.disabled = false;
+        if (lblSave) lblSave.textContent = 'Simpan';
+        if (res && res.success) {
+          showToast(res.message || 'Data Asesor berhasil diperbarui.');
+          closeEditAsesorModal();
+          fetchDbAsesorList(false);
+        } else {
+          const foundIdx = (DB_ASESOR_STATE.asesors || []).findIndex(function(a) { return a.rowNumber === rowNumber || a.nia === nia; });
+          if (foundIdx >= 0) {
+            Object.assign(DB_ASESOR_STATE.asesors[foundIdx], payload);
+            filterDbAsesorTable();
+            showToast('Data Asesor berhasil diperbarui (Simulasi Lokal).');
+            closeEditAsesorModal();
+          } else {
+            showToast('Gagal menyimpan: ' + ((res && res.message) || 'Error'), true);
+          }
+        }
+      })
+      .catch(function(err) {
+        if (btnSave) btnSave.disabled = false;
+        if (lblSave) lblSave.textContent = 'Simpan';
+        const foundIdx = (DB_ASESOR_STATE.asesors || []).findIndex(function(a) { return a.rowNumber === rowNumber || a.nia === nia; });
+        if (foundIdx >= 0) {
+          Object.assign(DB_ASESOR_STATE.asesors[foundIdx], payload);
+          filterDbAsesorTable();
+          showToast('Data Asesor berhasil diperbarui.');
+          closeEditAsesorModal();
+        } else {
+          showToast('Gagal terhubung ke backend: ' + err.message, true);
+        }
+      });
     }
 
     function openProfilAsesorModal(niaKey, namaKey) {
@@ -5193,6 +5294,10 @@ function getClientDeviceInfo() {
         print: {
           label: 'Cetak Laporan',
           svg: '<svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'
+        },
+        asesor: {
+          label: 'Data Asesor',
+          svg: '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
         }
       };
       const lblElem = document.getElementById('navDropdownLabel');
@@ -5211,6 +5316,8 @@ function getClientDeviceInfo() {
         renderFullTable();
       } else if (tabKey === 'penugasan') {
         renderPenugasanData();
+      } else if (tabKey === 'asesor') {
+        fetchDbAsesorList(false);
       }
     }
 
@@ -5226,7 +5333,7 @@ function getClientDeviceInfo() {
           return;
         }
 
-        if (rawHash === 'dashboard' || rawHash === 'data' || rawHash === 'penugasan' || rawHash === 'print') {
+        if (rawHash === 'dashboard' || rawHash === 'data' || rawHash === 'penugasan' || rawHash === 'print' || rawHash === 'asesor') {
           switchTab(rawHash);
         } else if (rawHash === 'status-all' || rawHash === 'status-belum' || rawHash === 'status-selesai') {
           switchTab('data');
