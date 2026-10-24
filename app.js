@@ -3591,8 +3591,15 @@ function getClientDeviceInfo() {
       const tbody = document.getElementById('tbodyDbAsesor');
       const countEl = document.getElementById('dbAsesorTotalCount');
 
+      // Standar ZettBOT: Client-Side In-Memory Cache (0 Detik jika sudah ada di cache & bukan manual refresh)
+      if (!isManual && Array.isArray(DB_ASESOR_STATE.asesors) && DB_ASESOR_STATE.asesors.length > 0) {
+        populateDbAsesorFilters(DB_ASESOR_STATE.asesors);
+        filterDbAsesorTable();
+        return;
+      }
+
       if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 2rem; color: #64748b;">' +
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: #64748b;">' +
           '<div class="loader-spinner" style="margin: 0 auto 0.5rem auto; width: 24px; height: 24px; border-width: 2.5px;"></div>' +
           'Memuat data asesor dari sheet DBAsesor...' +
         '</td></tr>';
@@ -3608,65 +3615,62 @@ function getClientDeviceInfo() {
               if (isManual) showToast('Data DBAsesor berhasil diperbarui.');
             } else {
               if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
                   'Gagal memuat DBAsesor: ' + ((res && res.message) || 'Unknown error') +
+                  '<div style="margin-top: 0.5rem;"><button type="button" class="btn-secondary" onclick="fetchDbAsesorList(true)" style="padding: 4px 10px; font-size: 0.75rem;">Coba Lagi</button></div>' +
                 '</td></tr>';
               }
             }
           })
           .withFailureHandler(function(err) {
             if (tbody) {
-              tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
+              tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
                 'Kesalahan server saat memuat DBAsesor: ' + (err.message || err.toString()) +
+                '<div style="margin-top: 0.5rem;"><button type="button" class="btn-secondary" onclick="fetchDbAsesorList(true)" style="padding: 4px 10px; font-size: 0.75rem;">Coba Lagi</button></div>' +
               '</td></tr>';
             }
           })
           .ambilSemuaDbAsesor(APP_STATE.currentUser);
       } else {
-        // Mode Standalone Browser (Simulasi Cerdas Terhubung ke Data yang Ada)
-        setTimeout(function() {
+        // Mode Standalone Browser / Vercel API
+        const loadFromApiOrFallback = function() {
+          if (APP_STATE.apiBaseUrl) {
+            fetch(APP_STATE.apiBaseUrl + '?action=ambilSemuaDbAsesor')
+              .then(function(res) { return res.json(); })
+              .then(function(res) {
+                if (res && res.success && Array.isArray(res.asesors) && res.asesors.length > 0) {
+                  DB_ASESOR_STATE.asesors = res.asesors;
+                  populateDbAsesorFilters(res.asesors);
+                  filterDbAsesorTable();
+                  if (isManual) showToast('Data DBAsesor berhasil diperbarui.');
+                  return;
+                }
+                fallbackLocal();
+              })
+              .catch(function() {
+                fallbackLocal();
+              });
+          } else {
+            fallbackLocal();
+          }
+        };
+
+        const fallbackLocal = function() {
           let list = [];
           if (Array.isArray(APP_STATE.daftarAsesor) && APP_STATE.daftarAsesor.length > 0) {
             list = APP_STATE.daftarAsesor.map(function(item, idx) {
-              const matchedItems = (APP_STATE.items || []).filter(function(row) {
-                return (row.namaAsesor1 && row.namaAsesor1.toUpperCase() === item.nama.toUpperCase()) ||
-                       (row.namaAsesor2 && row.namaAsesor2.toUpperCase() === item.nama.toUpperCase());
-              });
-              const selesaiCount = matchedItems.filter(function(row) {
-                const s1 = (row.namaAsesor1 && row.namaAsesor1.toUpperCase() === item.nama.toUpperCase()) && row.status1 === 'SELESAI';
-                const s2 = (row.namaAsesor2 && row.namaAsesor2.toUpperCase() === item.nama.toUpperCase()) && row.status2 === 'SELESAI';
-                return s1 || s2;
-              }).length;
-              const totalCount = matchedItems.length;
-
               return {
                 no: idx + 1,
+                rowNumber: idx + 2,
                 nia: item.nia || ('NIA-' + (1000 + idx)),
                 nama: item.nama,
                 kabupaten: item.kabupaten || 'Kab. Kupang',
-                instansi: 'Dinas P&K Prov. NTT',
+                instansi: item.instansi || 'Dinas P&K Prov. NTT',
                 jenjang: item.jenjang || 'PAUD/Dikdas',
                 peran: item.peran || (idx % 2 === 0 ? 'Asesor 1' : 'Asesor 2'),
-                status: 'Aktif',
-                noHp: item.noHp || '081234567890',
-                stats: {
-                  totalSekolah: totalCount,
-                  selesai: selesaiCount,
-                  belumSelesai: Math.max(0, totalCount - selesaiCount),
-                  progres: totalCount > 0 ? Math.round((selesaiCount / totalCount) * 100) : 0,
-                  penugasanList: matchedItems.map(function(row) {
-                    return {
-                      npsn: row.npsn,
-                      sekolah: row.namaSekolah,
-                      jenjang: row.jenjang,
-                      kabupaten: row.kabSekolah,
-                      tahap: row.tahap || '-',
-                      peran: (row.namaAsesor1 && row.namaAsesor1.toUpperCase() === item.nama.toUpperCase()) ? 'Asesor 1' : 'Asesor 2',
-                      statusIndividu: (row.namaAsesor1 && row.namaAsesor1.toUpperCase() === item.nama.toUpperCase()) ? row.status1 : row.status2,
-                      statusKelompok: row.statusKelompok
-                    };
-                  })
-                }
+                status: 'Sertifikat Aktif',
+                sediaBertugas: 'Bersedia',
+                noHp: item.noHp || '081234567890'
               };
             });
           }
@@ -3674,12 +3678,10 @@ function getClientDeviceInfo() {
           if (list.length === 0) {
             list = [
               {
-                no: 1, nia: 'NIA-001', nama: 'Dr. Arifin, M.Pd', kabupaten: 'Kota Kupang', instansi: 'BAN PDM Prov. NTT', jenjang: 'PAUD/Dikdas/Dikmen', peran: 'Ketua BAN PDM', status: 'Aktif', noHp: '081234567890',
-                stats: { totalSekolah: 12, selesai: 12, belumSelesai: 0, progres: 100, penugasanList: [] }
+                no: 1, rowNumber: 2, nia: '5371025001', nama: 'Dr. Arifin, M.Pd', kabupaten: 'KOTA KUPANG', instansi: 'BAN PDM Prov. NTT', jenjang: 'PAUD/Dikdas/Dikmen', peran: 'Ketua BAN PDM', status: 'Sertifikat Aktif', sediaBertugas: 'Bersedia', noHp: '081234567890'
               },
               {
-                no: 2, nia: 'NIA-002', nama: 'Adhy Lawa, S.Pd', kabupaten: 'Kab. Kupang', instansi: 'Dinas P&K NTT', jenjang: 'Dikdas', peran: 'Asesor 1', status: 'Aktif', noHp: '082144556677',
-                stats: { totalSekolah: 8, selesai: 7, belumSelesai: 1, progres: 88, penugasanList: [] }
+                no: 2, rowNumber: 3, nia: '5371025002', nama: 'Adhy Lawa, S.Pd', kabupaten: 'KABUPATEN KUPANG', instansi: 'Dinas P&K NTT', jenjang: 'Dikdas', peran: 'Asesor 1', status: 'Sertifikat Aktif', sediaBertugas: 'Bersedia', noHp: '082144556677'
               }
             ];
           }
@@ -3688,52 +3690,52 @@ function getClientDeviceInfo() {
           populateDbAsesorFilters(list);
           filterDbAsesorTable();
           if (isManual) showToast('Data DBAsesor berhasil diperbarui.');
-        }, 300);
+        };
+
+        setTimeout(loadFromApiOrFallback, 100);
       }
     }
 
     function populateDbAsesorFilters(asesorList) {
       const kabSelect = document.getElementById('dbAsesorFilterKab');
       const jenjangSelect = document.getElementById('dbAsesorFilterJenjang');
-      if (!kabSelect || !jenjangSelect) return;
+      if (!kabSelect) return;
 
       const curKab = kabSelect.value;
-      const curJenjang = jenjangSelect.value;
-
       const kabSet = {};
-      const jenjangSet = {};
 
       asesorList.forEach(function(item) {
         if (item.kabupaten && item.kabupaten !== '-') kabSet[item.kabupaten] = true;
-        if (item.jenjang && item.jenjang !== '-') jenjangSet[item.jenjang] = true;
       });
 
-      kabSelect.innerHTML = '<option value="">Semua Kabupaten</option>' +
+      kabSelect.innerHTML = '<option value="">Semua Kabupaten / Kota</option>' +
         Object.keys(kabSet).sort().map(function(k) {
           return '<option value="' + k + '"' + (curKab === k ? ' selected' : '') + '>' + k + '</option>';
         }).join('');
 
-      jenjangSelect.innerHTML = '<option value="">Semua Jenjang</option>' +
-        Object.keys(jenjangSet).sort().map(function(j) {
-          return '<option value="' + j + '"' + (curJenjang === j ? ' selected' : '') + '>' + j + '</option>';
-        }).join('');
+      if (jenjangSelect) {
+        const curJenjang = jenjangSelect.value;
+        const jenjangSet = {};
+        asesorList.forEach(function(item) {
+          if (item.jenjang && item.jenjang !== '-') jenjangSet[item.jenjang] = true;
+        });
+        jenjangSelect.innerHTML = '<option value="">Semua Jenjang</option>' +
+          Object.keys(jenjangSet).sort().map(function(j) {
+            return '<option value="' + j + '"' + (curJenjang === j ? ' selected' : '') + '>' + j + '</option>';
+          }).join('');
+      }
     }
 
     function filterDbAsesorTable() {
       const sInp = document.getElementById('dbAsesorSearchInput');
       const kabSelect = document.getElementById('dbAsesorFilterKab');
-      const jenjangSelect = document.getElementById('dbAsesorFilterJenjang');
       const countEl = document.getElementById('dbAsesorTotalCount');
 
       const q = sInp ? sInp.value.trim().toLowerCase() : '';
       const filterKab = kabSelect ? kabSelect.value.trim().toLowerCase() : '';
-      const filterJenjang = jenjangSelect ? jenjangSelect.value.trim().toLowerCase() : '';
 
       const filtered = (DB_ASESOR_STATE.asesors || []).filter(function(item) {
         if (filterKab && String(item.kabupaten || '').trim().toLowerCase() !== filterKab) {
-          return false;
-        }
-        if (filterJenjang && String(item.jenjang || '').trim().toLowerCase() !== filterJenjang) {
           return false;
         }
         if (q) {
@@ -3750,7 +3752,7 @@ function getClientDeviceInfo() {
       });
 
       DB_ASESOR_STATE.filtered = filtered;
-      if (countEl) countEl.textContent = filtered.length + ' Asesor';
+      if (countEl) countEl.textContent = filtered.length;
       renderDbAsesorTable(filtered);
     }
 
@@ -3759,7 +3761,7 @@ function getClientDeviceInfo() {
       if (!tbody) return;
 
       if (!list || list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2.5rem; color: #64748b;">' +
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2.5rem; color: #64748b;">' +
           'Tidak ada data asesor yang sesuai dengan filter atau kata kunci pencarian.' +
         '</td></tr>';
         return;
@@ -3770,18 +3772,12 @@ function getClientDeviceInfo() {
         const item = list[i];
         const safeNia = escapeHtml(item.nia || '-');
         const safeNama = escapeHtml(item.nama || '-');
-        const safeStatus = escapeHtml(item.status || 'Terverifikasi');
         const safeKab = escapeHtml(item.kabupaten || '-');
-        const sediaTxt = escapeHtml(item.sediaBertugas || 'Bersedia');
-        const isBersedia = !sediaTxt.toLowerCase().includes('tidak');
-        const badgeClass = isBersedia ? 'badge-sedia-bertugas' : 'badge-sedia-bertugas tidak-bersedia';
 
         html += '<tr style="border-bottom: 1px solid #e2e8f0;">' +
           '<td class="asesor-nia-cell">' + safeNia + '</td>' +
           '<td class="asesor-nama-cell">' + safeNama + '</td>' +
-          '<td>' + safeStatus + '</td>' +
           '<td>' + safeKab + '</td>' +
-          '<td style="text-align: center;"><span class="' + badgeClass + '">' + sediaTxt + '</span></td>' +
           '<td style="text-align: center;">' +
             '<button type="button" class="btn-table-edit" onclick="openEditAsesorModal(\'' + safeNia + '\', ' + (item.rowNumber || (i + 2)) + ')" title="Edit data ' + safeNama + '">Edit</button>' +
           '</td>' +
