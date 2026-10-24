@@ -210,8 +210,10 @@
               <div class="user-dropdown-role-tag" id="userDropdownRoleTag">Peran: Administrator Sistem</div>
             </div>
             <!-- Menu Khusus Administrator -->
-            <div id="adminDropdownActions" class="admin-dropdown-actions" style="display: none;">
-              <div class="user-dropdown-divider"></div>
+              <a href="#modal-db-asesor" class="user-dropdown-action-btn" onclick="openDbAsesorModal(); closeAllDropdowns(); if(event) event.preventDefault();" title="Data Base Asesor (DBAsesor)">
+                <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
+                <span>Data Base Asesor (DBAsesor)</span>
+              </a>
               <a href="#modal-user" class="user-dropdown-action-btn" onclick="openUserModal(); closeAllDropdowns(); if(event) event.preventDefault();" title="Kelola Pengguna (DataUser)">
                 <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 <span>Kelola Pengguna (DataUser)</span>
@@ -309,6 +311,12 @@
 
           <!-- Menu Khusus Administrator Mobile -->
           <div id="mobileAdminActions" class="mobile-admin-actions" style="display: none;">
+            <a href="#modal-db-asesor" class="btn-mobile-admin-action" onclick="openDbAsesorModal(); toggleMobileDrawer(false); if(event) event.preventDefault();" title="Data Base Asesor (DBAsesor)">
+              <div class="admin-action-icon-box">
+                <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
+              </div>
+              <span>Data Base Asesor (DBAsesor)</span>
+            </a>
             <a href="#modal-user" class="btn-mobile-admin-action" onclick="openUserModal(); toggleMobileDrawer(false); if(event) event.preventDefault();" title="Kelola Pengguna (DataUser)">
               <div class="admin-action-icon-box">
                 <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -1359,6 +1367,232 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL DATABASE ASESOR (SHEET DBASESOR) - v1.0.65
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalDbAsesor">
+    <div class="modal-window modal-window-lg" style="max-width: 1050px; width: 96%;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div class="modal-icon-badge" style="background: rgba(16, 185, 129, 0.12); color: #059669;">
+            <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 1.05rem;">Data Base Asesor (DBAsesor)</h3>
+            <span style="font-size: 0.725rem; color: #64748b;">Direktori resmi data induk asesor BAN PDM Provinsi NTT, kontak WhatsApp, dan profil penugasan</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeDbAsesorModal()">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.25rem 1.5rem;">
+        <!-- Control Toolbar: Cari, Filter Kabupaten, Filter Jenjang, Total Counter, Tombol Refresh -->
+        <div class="db-asesor-toolbar">
+          <div class="db-asesor-filters">
+            <div style="font-size: 0.825rem; color: #334155; font-weight: 600;">
+              Total: <strong id="dbAsesorTotalCount" style="color: #0f172a;">-</strong>
+            </div>
+            <div class="db-asesor-search-box">
+              <input type="text" id="dbAsesorSearchInput" placeholder="Cari nama, NIA, kab, instansi, HP..." oninput="filterDbAsesorTable()">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            <select id="dbAsesorFilterKab" class="db-select-filter" onchange="filterDbAsesorTable()">
+              <option value="">Semua Kabupaten</option>
+            </select>
+            <select id="dbAsesorFilterJenjang" class="db-select-filter" onchange="filterDbAsesorTable()">
+              <option value="">Semua Jenjang</option>
+            </select>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <button type="button" class="btn-refresh-log" onclick="fetchDbAsesorList(true)" title="Segarkan data dari sheet DBAsesor">
+              <svg viewBox="0 0 24 24"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+              <span>Segarkan</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabel Responsif Database Asesor -->
+        <div class="table-container" style="max-height: 460px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px;">
+          <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
+            <thead style="position: sticky; top: 0; background: #0f172a; color: #ffffff; z-index: 2;">
+              <tr>
+                <th style="padding: 9px 8px; text-align: center; width: 40px;">No</th>
+                <th style="padding: 9px 10px; text-align: left; width: 100px;">NIA</th>
+                <th style="padding: 9px 12px; text-align: left;">Nama Lengkap Asesor</th>
+                <th style="padding: 9px 10px; text-align: left;">Asal Kabupaten</th>
+                <th style="padding: 9px 12px; text-align: left;">Instansi / Unit Kerja</th>
+                <th style="padding: 9px 8px; text-align: center; width: 85px;">Jenjang</th>
+                <th style="padding: 9px 8px; text-align: center; width: 85px;">Peran</th>
+                <th style="padding: 9px 10px; text-align: center; width: 130px;">No. HP / WA</th>
+                <th style="padding: 9px 8px; text-align: center; width: 80px;">Status</th>
+                <th style="padding: 9px 10px; text-align: center; width: 110px;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyDbAsesor">
+              <tr>
+                <td colspan="10" style="text-align: center; padding: 2rem; color: #64748b;">
+                  Memuat data dari sheet DBAsesor...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 0.85rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.72rem; color: #64748b;">Sumber Data: Tab <code>DBAsesor</code> &bull; Terintegrasi Kinerja Penugasan</span>
+        <button type="button" class="btn-secondary" onclick="closeDbAsesorModal()">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL PROFIL INDIVIDU ASESOR (SESUAI DBASESOR) - v1.0.65
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalProfilAsesor" style="z-index: 1050;">
+    <div class="modal-window modal-window-lg" style="max-width: 850px; width: 95%;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div class="modal-icon-badge" style="background: rgba(37, 99, 235, 0.12); color: #2563eb;">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 1.05rem;">Profil Lengkap Asesor</h3>
+            <span style="font-size: 0.725rem; color: #64748b;">Rincian biodata resmi DBAsesor &amp; rekapitulasi penilaian sekolah</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeProfilAsesorModal()">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.25rem 1.5rem; max-height: calc(85vh - 120px); overflow-y: auto;">
+        <!-- Hero Card Profil Asesor -->
+        <div class="profil-hero-card">
+          <div class="profil-avatar-box" id="profilAvatarText">AS</div>
+          <div class="profil-hero-info">
+            <div class="profil-hero-name" id="profilNamaLengkap">-</div>
+            <div class="profil-hero-nia">
+              <span>NIA: <strong id="profilNiaText" style="color: #ffffff;">-</strong></span>
+              <span>&bull;</span>
+              <span id="profilKabText">-</span>
+            </div>
+            <div class="profil-badges-row">
+              <span class="status-badge status-badge-info" id="profilJenjangBadge">-</span>
+              <span class="status-badge status-badge-purple" id="profilPeranBadge">-</span>
+              <span class="status-badge status-badge-selesai" id="profilStatusBadge">Aktif</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid 2 Kolom: Data Pribadi & Kelembagaan -->
+        <div class="profil-grid">
+          <!-- Card 1: Data Kontak & Wilayah -->
+          <div class="profil-info-card">
+            <div class="profil-card-header">
+              <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <span>Kontak &amp; Wilayah Domisili</span>
+            </div>
+            <div class="profil-data-list">
+              <div class="profil-data-item">
+                <span class="profil-data-label">Nomor Induk (NIA)</span>
+                <span class="profil-data-val" id="profilValNia">-</span>
+              </div>
+              <div class="profil-data-item">
+                <span class="profil-data-label">Nomor HP / WA</span>
+                <span class="profil-data-val" id="profilValHp">-</span>
+              </div>
+              <div class="profil-data-item">
+                <span class="profil-data-label">Asal Kabupaten</span>
+                <span class="profil-data-val" id="profilValKabupaten">-</span>
+              </div>
+              <div style="margin-top: 0.4rem;" id="profilWaBtnContainer">
+                <!-- Tautan WhatsApp otomatis diinject via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Kelembagaan & Kualifikasi -->
+          <div class="profil-info-card">
+            <div class="profil-card-header">
+              <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              <span>Instansi &amp; Kualifikasi Asesor</span>
+            </div>
+            <div class="profil-data-list">
+              <div class="profil-data-item">
+                <span class="profil-data-label">Instansi / Unit</span>
+                <span class="profil-data-val" id="profilValInstansi">-</span>
+              </div>
+              <div class="profil-data-item">
+                <span class="profil-data-label">Jenjang Akreditasi</span>
+                <span class="profil-data-val" id="profilValJenjang">-</span>
+              </div>
+              <div class="profil-data-item">
+                <span class="profil-data-label">Peran Tugas</span>
+                <span class="profil-data-val" id="profilValPeran">-</span>
+              </div>
+              <div class="profil-data-item">
+                <span class="profil-data-label">Status Keaktifan</span>
+                <span class="profil-data-val" id="profilValStatus">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Statistik Kinerja Penugasan dari DataPenilaian -->
+        <div class="profil-info-card" style="margin-bottom: 1.25rem;">
+          <div class="profil-card-header">
+            <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <span>Rekapitulasi Kinerja Penugasan (Terhubung Real-Time ke DataPenilaian)</span>
+          </div>
+          <div class="profil-stats-grid">
+            <div class="profil-stat-box">
+              <div class="profil-stat-num" id="profilStatTotalSekolah" style="color: #2563eb;">0</div>
+              <div class="profil-stat-label">Total Sekolah</div>
+            </div>
+            <div class="profil-stat-box">
+              <div class="profil-stat-num" id="profilStatSelesai" style="color: #059669;">0</div>
+              <div class="profil-stat-label">Selesai Dinilai</div>
+            </div>
+            <div class="profil-stat-box">
+              <div class="profil-stat-num" id="profilStatProgres" style="color: #d97706;">0%</div>
+              <div class="profil-stat-label">Progres Kinerja</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Daftar Riwayat Sekolah Penugasan -->
+        <div class="profil-info-card">
+          <div class="profil-card-header">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>Daftar Sekolah yang Ditugaskan</span>
+          </div>
+          <div style="max-height: 220px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px;">
+            <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.74rem;">
+              <thead style="position: sticky; top: 0; background: #1e293b; color: #ffffff;">
+                <tr>
+                  <th style="padding: 6px 8px; text-align: left;">NPSN &amp; Sekolah</th>
+                  <th style="padding: 6px 8px; text-align: left;">Kabupaten</th>
+                  <th style="padding: 6px 8px; text-align: center; width: 65px;">Jenjang</th>
+                  <th style="padding: 6px 8px; text-align: center; width: 75px;">Peran</th>
+                  <th style="padding: 6px 8px; text-align: center; width: 85px;">Status Nilai</th>
+                  <th style="padding: 6px 8px; text-align: center; width: 85px;">Kelompok</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyProfilPenugasan">
+                <tr>
+                  <td colspan="6" style="text-align: center; padding: 1rem; color: #64748b;">Belum ada riwayat penugasan.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 0.85rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <button type="button" class="btn-secondary" onclick="closeProfilAsesorModal()">Kembali</button>
       </div>
     </div>
   </div>

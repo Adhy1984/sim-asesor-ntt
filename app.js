@@ -3544,6 +3544,432 @@ function getClientDeviceInfo() {
       }
     }
 
+    /* ==========================================================================
+       DATABASE ASESOR & PROFIL ASESOR CONTROLLER (SHEET DBASESOR - v1.0.65)
+       ========================================================================== */
+    const DB_ASESOR_STATE = {
+      asesors: [],
+      filtered: []
+    };
+
+    function openDbAsesorModal() {
+      const curRole = String(APP_STATE.currentUserRole || '').toLowerCase();
+      const curUsername = (APP_STATE.currentUser && APP_STATE.currentUser.username) ? String(APP_STATE.currentUser.username).toLowerCase() : '';
+      const isAdmin = (curRole === 'admin' || curUsername === 'admin');
+
+      if (!isAdmin) {
+        showToast('Akses ditolak: Menu Data Base Asesor hanya diperuntukkan bagi Administrator Sistem.');
+        return;
+      }
+
+      const modal = document.getElementById('modalDbAsesor');
+      if (modal) modal.classList.add('active');
+
+      const sInp = document.getElementById('dbAsesorSearchInput');
+      if (sInp) sInp.value = '';
+      const filterKab = document.getElementById('dbAsesorFilterKab');
+      if (filterKab) filterKab.value = '';
+      const filterJenjang = document.getElementById('dbAsesorFilterJenjang');
+      if (filterJenjang) filterJenjang.value = '';
+
+      fetchDbAsesorList(false);
+    }
+
+    function closeDbAsesorModal(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const modal = document.getElementById('modalDbAsesor');
+      if (modal) modal.classList.remove('active');
+    }
+
+    function fetchDbAsesorList(isManual) {
+      const tbody = document.getElementById('tbodyDbAsesor');
+      const countEl = document.getElementById('dbAsesorTotalCount');
+
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 2rem; color: #64748b;">' +
+          '<div class="loader-spinner" style="margin: 0 auto 0.5rem auto; width: 24px; height: 24px; border-width: 2.5px;"></div>' +
+          'Memuat data asesor dari sheet DBAsesor...' +
+        '</td></tr>';
+      }
+
+      if (APP_STATE.isGoogleAppsScript) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.success) {
+              DB_ASESOR_STATE.asesors = res.asesors || [];
+              populateDbAsesorFilters(DB_ASESOR_STATE.asesors);
+              filterDbAsesorTable();
+              if (isManual) showToast('Data DBAsesor berhasil diperbarui.');
+            } else {
+              if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
+                  'Gagal memuat DBAsesor: ' + ((res && res.message) || 'Unknown error') +
+                '</td></tr>';
+              }
+            }
+          })
+          .withFailureHandler(function(err) {
+            if (tbody) {
+              tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
+                'Kesalahan server saat memuat DBAsesor: ' + (err.message || err.toString()) +
+              '</td></tr>';
+            }
+          })
+          .ambilSemuaDbAsesor(APP_STATE.currentUser);
+      } else {
+        // Mode Standalone Browser (Simulasi Cerdas Terhubung ke Data yang Ada)
+        setTimeout(function() {
+          let list = [];
+          if (Array.isArray(APP_STATE.daftarAsesor) && APP_STATE.daftarAsesor.length > 0) {
+            list = APP_STATE.daftarAsesor.map(function(item, idx) {
+              const matchedItems = (APP_STATE.items || []).filter(function(row) {
+                return (row.namaAsesor1 && row.namaAsesor1.toUpperCase() === item.nama.toUpperCase()) ||
+                       (row.namaAsesor2 && row.namaAsesor2.toUpperCase() === item.nama.toUpperCase());
+              });
+              const selesaiCount = matchedItems.filter(function(row) {
+                const s1 = (row.namaAsesor1 && row.namaAsesor1.toUpperCase() === item.nama.toUpperCase()) && row.status1 === 'SELESAI';
+                const s2 = (row.namaAsesor2 && row.namaAsesor2.toUpperCase() === item.nama.toUpperCase()) && row.status2 === 'SELESAI';
+                return s1 || s2;
+              }).length;
+              const totalCount = matchedItems.length;
+
+              return {
+                no: idx + 1,
+                nia: item.nia || ('NIA-' + (1000 + idx)),
+                nama: item.nama,
+                kabupaten: item.kabupaten || 'Kab. Kupang',
+                instansi: 'Dinas P&K Prov. NTT',
+                jenjang: item.jenjang || 'PAUD/Dikdas',
+                peran: item.peran || (idx % 2 === 0 ? 'Asesor 1' : 'Asesor 2'),
+                status: 'Aktif',
+                noHp: item.noHp || '081234567890',
+                stats: {
+                  totalSekolah: totalCount,
+                  selesai: selesaiCount,
+                  belumSelesai: Math.max(0, totalCount - selesaiCount),
+                  progres: totalCount > 0 ? Math.round((selesaiCount / totalCount) * 100) : 0,
+                  penugasanList: matchedItems.map(function(row) {
+                    return {
+                      npsn: row.npsn,
+                      sekolah: row.namaSekolah,
+                      jenjang: row.jenjang,
+                      kabupaten: row.kabSekolah,
+                      tahap: row.tahap || '-',
+                      peran: (row.namaAsesor1 && row.namaAsesor1.toUpperCase() === item.nama.toUpperCase()) ? 'Asesor 1' : 'Asesor 2',
+                      statusIndividu: (row.namaAsesor1 && row.namaAsesor1.toUpperCase() === item.nama.toUpperCase()) ? row.status1 : row.status2,
+                      statusKelompok: row.statusKelompok
+                    };
+                  })
+                }
+              };
+            });
+          }
+
+          if (list.length === 0) {
+            list = [
+              {
+                no: 1, nia: 'NIA-001', nama: 'Dr. Arifin, M.Pd', kabupaten: 'Kota Kupang', instansi: 'BAN PDM Prov. NTT', jenjang: 'PAUD/Dikdas/Dikmen', peran: 'Ketua BAN PDM', status: 'Aktif', noHp: '081234567890',
+                stats: { totalSekolah: 12, selesai: 12, belumSelesai: 0, progres: 100, penugasanList: [] }
+              },
+              {
+                no: 2, nia: 'NIA-002', nama: 'Adhy Lawa, S.Pd', kabupaten: 'Kab. Kupang', instansi: 'Dinas P&K NTT', jenjang: 'Dikdas', peran: 'Asesor 1', status: 'Aktif', noHp: '082144556677',
+                stats: { totalSekolah: 8, selesai: 7, belumSelesai: 1, progres: 88, penugasanList: [] }
+              }
+            ];
+          }
+
+          DB_ASESOR_STATE.asesors = list;
+          populateDbAsesorFilters(list);
+          filterDbAsesorTable();
+          if (isManual) showToast('Data DBAsesor berhasil diperbarui.');
+        }, 300);
+      }
+    }
+
+    function populateDbAsesorFilters(asesorList) {
+      const kabSelect = document.getElementById('dbAsesorFilterKab');
+      const jenjangSelect = document.getElementById('dbAsesorFilterJenjang');
+      if (!kabSelect || !jenjangSelect) return;
+
+      const curKab = kabSelect.value;
+      const curJenjang = jenjangSelect.value;
+
+      const kabSet = {};
+      const jenjangSet = {};
+
+      asesorList.forEach(function(item) {
+        if (item.kabupaten && item.kabupaten !== '-') kabSet[item.kabupaten] = true;
+        if (item.jenjang && item.jenjang !== '-') jenjangSet[item.jenjang] = true;
+      });
+
+      kabSelect.innerHTML = '<option value="">Semua Kabupaten</option>' +
+        Object.keys(kabSet).sort().map(function(k) {
+          return '<option value="' + k + '"' + (curKab === k ? ' selected' : '') + '>' + k + '</option>';
+        }).join('');
+
+      jenjangSelect.innerHTML = '<option value="">Semua Jenjang</option>' +
+        Object.keys(jenjangSet).sort().map(function(j) {
+          return '<option value="' + j + '"' + (curJenjang === j ? ' selected' : '') + '>' + j + '</option>';
+        }).join('');
+    }
+
+    function filterDbAsesorTable() {
+      const sInp = document.getElementById('dbAsesorSearchInput');
+      const kabSelect = document.getElementById('dbAsesorFilterKab');
+      const jenjangSelect = document.getElementById('dbAsesorFilterJenjang');
+      const countEl = document.getElementById('dbAsesorTotalCount');
+
+      const q = sInp ? sInp.value.trim().toLowerCase() : '';
+      const filterKab = kabSelect ? kabSelect.value.trim().toLowerCase() : '';
+      const filterJenjang = jenjangSelect ? jenjangSelect.value.trim().toLowerCase() : '';
+
+      const filtered = (DB_ASESOR_STATE.asesors || []).filter(function(item) {
+        if (filterKab && String(item.kabupaten || '').trim().toLowerCase() !== filterKab) {
+          return false;
+        }
+        if (filterJenjang && String(item.jenjang || '').trim().toLowerCase() !== filterJenjang) {
+          return false;
+        }
+        if (q) {
+          const matchNama = String(item.nama || '').toLowerCase().includes(q);
+          const matchNia = String(item.nia || '').toLowerCase().includes(q);
+          const matchKab = String(item.kabupaten || '').toLowerCase().includes(q);
+          const matchInstansi = String(item.instansi || '').toLowerCase().includes(q);
+          const matchHp = String(item.noHp || '').toLowerCase().includes(q);
+          if (!matchNama && !matchNia && !matchKab && !matchInstansi && !matchHp) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      DB_ASESOR_STATE.filtered = filtered;
+      if (countEl) countEl.textContent = filtered.length + ' Asesor';
+      renderDbAsesorTable(filtered);
+    }
+
+    function renderDbAsesorTable(list) {
+      const tbody = document.getElementById('tbodyDbAsesor');
+      if (!tbody) return;
+
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 2rem; color: #64748b;">' +
+          'Tidak ada data asesor yang sesuai dengan filter atau kata kunci pencarian.' +
+        '</td></tr>';
+        return;
+      }
+
+      let html = '';
+      for (let i = 0; i < list.length; i++) {
+        const item = list[i];
+        const rawHp = String(item.noHp || '').trim();
+        const cleanHpDigits = rawHp.replace(/\D/g, '');
+        let waLinkHtml = '-';
+
+        if (cleanHpDigits.length >= 9) {
+          let intlWa = cleanHpDigits;
+          if (intlWa.startsWith('0')) intlWa = '62' + intlWa.substring(1);
+          waLinkHtml = '<a href="https://wa.me/' + intlWa + '" target="_blank" rel="noopener noreferrer" class="btn-wa-link" title="Kirim pesan WhatsApp ke ' + escapeHtml(item.nama) + '">' +
+            '<svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>' +
+            '<span>' + escapeHtml(rawHp) + '</span>' +
+          '</a>';
+        } else if (rawHp && rawHp !== '-') {
+          waLinkHtml = '<span>' + escapeHtml(rawHp) + '</span>';
+        }
+
+        const isAktif = String(item.status || '').toLowerCase().includes('aktif');
+        const statusBadgeClass = isAktif ? 'status-badge-selesai' : 'status-badge-belum';
+
+        const safeNia = escapeHtml(item.nia || '');
+        const safeNama = escapeHtml(item.nama || '');
+
+        html += '<tr style="border-bottom: 1px solid #e2e8f0; transition: background 0.15s ease;" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'transparent\'">' +
+          '<td style="padding: 7px 8px; text-align: center; color: #64748b;">' + (i + 1) + '</td>' +
+          '<td style="padding: 7px 10px; font-weight: 700; color: #1e3a8a; font-family: monospace;">' + safeNia + '</td>' +
+          '<td style="padding: 7px 12px; font-weight: 600; color: #0f172a;">' + safeNama + '</td>' +
+          '<td style="padding: 7px 10px; color: #334155;">' + escapeHtml(item.kabupaten || '-') + '</td>' +
+          '<td style="padding: 7px 12px; color: #475569;">' + escapeHtml(item.instansi || '-') + '</td>' +
+          '<td style="padding: 7px 8px; text-align: center;"><span class="status-badge status-badge-info" style="font-size: 0.68rem; padding: 2px 6px;">' + escapeHtml(item.jenjang || '-') + '</span></td>' +
+          '<td style="padding: 7px 8px; text-align: center;"><span class="status-badge status-badge-purple" style="font-size: 0.68rem; padding: 2px 6px;">' + escapeHtml(item.peran || 'Asesor') + '</span></td>' +
+          '<td style="padding: 7px 10px; text-align: center;">' + waLinkHtml + '</td>' +
+          '<td style="padding: 7px 8px; text-align: center;"><span class="status-badge ' + statusBadgeClass + '" style="font-size: 0.68rem; padding: 2px 6px;">' + escapeHtml(item.status || 'Aktif') + '</span></td>' +
+          '<td style="padding: 7px 10px; text-align: center;">' +
+            '<button type="button" class="btn-profile-view" onclick="openProfilAsesorModal(\'' + safeNia + '\', \'' + safeNama.replace(/'/g, "\\'") + '\')" title="Buka profil lengkap ' + safeNama + '">' +
+              '<svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
+              '<span>Profil</span>' +
+            '</button>' +
+          '</td>' +
+        '</tr>';
+      }
+
+      tbody.innerHTML = html;
+    }
+
+    function openProfilAsesorModal(niaKey, namaKey) {
+      const all = DB_ASESOR_STATE.asesors || [];
+      let found = null;
+
+      if (niaKey && niaKey !== '-') {
+        found = all.find(function(a) { return String(a.nia || '').trim().toLowerCase() === String(niaKey).trim().toLowerCase(); });
+      }
+      if (!found && namaKey) {
+        found = all.find(function(a) { return String(a.nama || '').trim().toUpperCase() === String(namaKey).trim().toUpperCase(); });
+      }
+
+      if (!found) {
+        showToast('Data profil asesor tidak ditemukan.');
+        return;
+      }
+
+      // Hitung / perbarui statistik kinerja dari APP_STATE.items jika penugasanList kosong
+      let stats = found.stats || { totalSekolah: 0, selesai: 0, belumSelesai: 0, progres: 0, penugasanList: [] };
+      if ((!stats.penugasanList || stats.penugasanList.length === 0) && Array.isArray(APP_STATE.items) && APP_STATE.items.length > 0) {
+        const pItems = APP_STATE.items.filter(function(row) {
+          const match1 = (row.namaAsesor1 && row.namaAsesor1.toUpperCase() === found.nama.toUpperCase()) || (row.nia1 && row.nia1 === found.nia);
+          const match2 = (row.namaAsesor2 && row.namaAsesor2.toUpperCase() === found.nama.toUpperCase()) || (row.nia2 && row.nia2 === found.nia);
+          return match1 || match2;
+        });
+
+        let selCount = 0;
+        const pList = pItems.map(function(row) {
+          const isA1 = (row.namaAsesor1 && row.namaAsesor1.toUpperCase() === found.nama.toUpperCase()) || (row.nia1 && row.nia1 === found.nia);
+          const isSel = isA1 ? (row.status1 === 'SELESAI') : (row.status2 === 'SELESAI');
+          if (isSel) selCount++;
+          return {
+            npsn: row.npsn,
+            sekolah: row.namaSekolah,
+            jenjang: row.jenjang,
+            kabupaten: row.kabSekolah,
+            tahap: row.tahap || '-',
+            peran: isA1 ? 'Asesor 1' : 'Asesor 2',
+            statusIndividu: isA1 ? row.status1 : row.status2,
+            statusKelompok: row.statusKelompok
+          };
+        });
+
+        const totalP = pList.length;
+        stats = {
+          totalSekolah: totalP,
+          selesai: selCount,
+          belumSelesai: Math.max(0, totalP - selCount),
+          progres: totalP > 0 ? Math.round((selCount / totalP) * 100) : 0,
+          penugasanList: pList
+        };
+      }
+
+      // Inisial avatar
+      const nameParts = String(found.nama || 'Asesor').trim().split(/\s+/);
+      let initials = 'AS';
+      if (nameParts.length >= 2) {
+        initials = (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+      } else if (nameParts.length === 1 && nameParts[0].length >= 2) {
+        initials = nameParts[0].substring(0, 2).toUpperCase();
+      }
+
+      const avatarBox = document.getElementById('profilAvatarText');
+      if (avatarBox) avatarBox.textContent = initials;
+
+      const namaEl = document.getElementById('profilNamaLengkap');
+      if (namaEl) namaEl.textContent = found.nama || '-';
+
+      const niaEl = document.getElementById('profilNiaText');
+      if (niaEl) niaEl.textContent = found.nia || '-';
+
+      const kabEl = document.getElementById('profilKabText');
+      if (kabEl) kabEl.textContent = found.kabupaten || '-';
+
+      const jenjangBadge = document.getElementById('profilJenjangBadge');
+      if (jenjangBadge) jenjangBadge.textContent = 'Jenjang: ' + (found.jenjang || '-');
+
+      const peranBadge = document.getElementById('profilPeranBadge');
+      if (peranBadge) peranBadge.textContent = 'Peran: ' + (found.peran || 'Asesor');
+
+      const statusBadge = document.getElementById('profilStatusBadge');
+      if (statusBadge) {
+        const isAktif = String(found.status || '').toLowerCase().includes('aktif');
+        statusBadge.textContent = found.status || 'Aktif';
+        statusBadge.className = 'status-badge ' + (isAktif ? 'status-badge-selesai' : 'status-badge-belum');
+      }
+
+      const valNia = document.getElementById('profilValNia');
+      if (valNia) valNia.textContent = found.nia || '-';
+
+      const valHp = document.getElementById('profilValHp');
+      if (valHp) valHp.textContent = found.noHp || '-';
+
+      const valKab = document.getElementById('profilValKabupaten');
+      if (valKab) valKab.textContent = found.kabupaten || '-';
+
+      const valInstansi = document.getElementById('profilValInstansi');
+      if (valInstansi) valInstansi.textContent = found.instansi || '-';
+
+      const valJenjang = document.getElementById('profilValJenjang');
+      if (valJenjang) valJenjang.textContent = found.jenjang || '-';
+
+      const valPeran = document.getElementById('profilValPeran');
+      if (valPeran) valPeran.textContent = found.peran || 'Asesor';
+
+      const valStatus = document.getElementById('profilValStatus');
+      if (valStatus) valStatus.textContent = found.status || 'Aktif';
+
+      // Tombol WhatsApp
+      const waContainer = document.getElementById('profilWaBtnContainer');
+      if (waContainer) {
+        const rawHp = String(found.noHp || '').trim();
+        const digits = rawHp.replace(/\D/g, '');
+        if (digits.length >= 9) {
+          let intl = digits;
+          if (intl.startsWith('0')) intl = '62' + intl.substring(1);
+          waContainer.innerHTML = '<a href="https://wa.me/' + intl + '" target="_blank" rel="noopener noreferrer" class="btn-wa-link" style="display: inline-flex; padding: 5px 12px; font-size: 0.78rem;">' +
+            '<svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>' +
+            '<span>Hubungi via WhatsApp</span>' +
+          '</a>';
+        } else {
+          waContainer.innerHTML = '';
+        }
+      }
+
+      // Statistik Kinerja
+      const statTotal = document.getElementById('profilStatTotalSekolah');
+      if (statTotal) statTotal.textContent = stats.totalSekolah || 0;
+
+      const statSelesai = document.getElementById('profilStatSelesai');
+      if (statSelesai) statSelesai.textContent = stats.selesai || 0;
+
+      const statProgres = document.getElementById('profilStatProgres');
+      if (statProgres) statProgres.textContent = (stats.progres || 0) + '%';
+
+      // Tabel Riwayat Penugasan
+      const tbodyRiwayat = document.getElementById('tbodyProfilPenugasan');
+      if (tbodyRiwayat) {
+        if (!stats.penugasanList || stats.penugasanList.length === 0) {
+          tbodyRiwayat.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 1.25rem; color: #64748b;">Belum ada penugasan visitasi tercatat di sheet DataPenilaian.</td></tr>';
+        } else {
+          tbodyRiwayat.innerHTML = stats.penugasanList.map(function(p) {
+            const isIndSel = (p.statusIndividu === 'SELESAI');
+            const isKelSel = (p.statusKelompok === 'SELESAI');
+            return '<tr style="border-bottom: 1px solid #e2e8f0;">' +
+              '<td style="padding: 6px 8px;"><div style="font-weight: 600; color: #0f172a;">' + escapeHtml(p.sekolah) + '</div><div style="font-size: 0.68rem; color: #64748b; font-family: monospace;">' + escapeHtml(p.npsn) + ' (Tahap ' + escapeHtml(p.tahap) + ')</div></td>' +
+              '<td style="padding: 6px 8px; color: #334155;">' + escapeHtml(p.kabupaten) + '</td>' +
+              '<td style="padding: 6px 8px; text-align: center;"><span class="status-badge status-badge-info" style="font-size: 0.65rem; padding: 2px 5px;">' + escapeHtml(p.jenjang) + '</span></td>' +
+              '<td style="padding: 6px 8px; text-align: center;"><span class="status-badge status-badge-purple" style="font-size: 0.65rem; padding: 2px 5px;">' + escapeHtml(p.peran) + '</span></td>' +
+              '<td style="padding: 6px 8px; text-align: center;"><span class="status-badge ' + (isIndSel ? 'status-badge-selesai' : 'status-badge-belum') + '" style="font-size: 0.65rem; padding: 2px 5px;">' + (isIndSel ? 'SELESAI' : 'BELUM') + '</span></td>' +
+              '<td style="padding: 6px 8px; text-align: center;"><span class="status-badge ' + (isKelSel ? 'status-badge-selesai' : 'status-badge-belum') + '" style="font-size: 0.65rem; padding: 2px 5px;">' + (isKelSel ? 'SELESAI' : 'BELUM') + '</span></td>' +
+            '</tr>';
+          }).join('');
+        }
+      }
+
+      const modalProfil = document.getElementById('modalProfilAsesor');
+      if (modalProfil) modalProfil.classList.add('active');
+    }
+
+    function closeProfilAsesorModal(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const modal = document.getElementById('modalProfilAsesor');
+      if (modal) modal.classList.remove('active');
+    }
+
     /**
      * RENDER CETAK LAPORAN RESMI (A4 Landscape)
      * Format 1: LENGKAP (15 Kolom Rincian per Satuan Pendidikan)
@@ -4811,6 +5237,8 @@ function getClientDeviceInfo() {
           }
         } else if (rawHash === 'modal-user') {
           if (typeof openUserModal === 'function') openUserModal();
+        } else if (rawHash === 'modal-db-asesor') {
+          if (typeof openDbAsesorModal === 'function') openDbAsesorModal();
         } else if (rawHash === 'modal-import') {
           if (typeof openImportModal === 'function') openImportModal();
         } else if (rawHash === 'modal-log') {
