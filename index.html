@@ -1000,22 +1000,34 @@
           </div>
         </div>
 
-        <div class="print-filter-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+        <div class="print-filter-grid asesor-filter-grid" style="grid-template-columns: minmax(280px, 1.8fr) minmax(220px, 1.2fr) auto; gap: 1rem; align-items: flex-end;">
           <div class="filter-item">
-            <label for="dbAsesorSearchInput">Pencarian NIA, Nama Asesor, atau Kabupaten</label>
-            <div style="position: relative;">
-              <input type="text" id="dbAsesorSearchInput" class="filter-select" placeholder="Ketik kata kunci pencarian..." oninput="filterDbAsesorTable()">
+            <label for="dbAsesorSearchInput">
+              <svg viewBox="0 0 24 24" class="label-inline-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Pencarian NIA, Nama Asesor, atau Kabupaten
+            </label>
+            <div class="db-asesor-search-box">
+              <svg viewBox="0 0 24 24" class="search-lead-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="dbAsesorSearchInput" class="db-search-input" placeholder="Ketik kata kunci pencarian (nama, NIA, atau asal kota)..." oninput="filterDbAsesorTable()" autocomplete="off">
+              <button type="button" id="btnDbAsesorClearSearch" class="btn-clear-search" onclick="clearDbAsesorSearch()" title="Hapus kata kunci" style="display: none;">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </div>
           </div>
           <div class="filter-item">
-            <label for="dbAsesorFilterKab">Filter Kabupaten / Kota</label>
-            <select id="dbAsesorFilterKab" class="filter-select" onchange="filterDbAsesorTable()">
+            <label for="dbAsesorFilterKab">
+              <svg viewBox="0 0 24 24" class="label-inline-icon"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Filter Kabupaten / Kota
+            </label>
+            <select id="dbAsesorFilterKab" class="db-filter-select" onchange="filterDbAsesorTable()">
               <option value="">Semua Kabupaten / Kota</option>
             </select>
           </div>
-          <div class="filter-item" style="display: flex; align-items: flex-end; padding-bottom: 4px;">
-            <div style="font-size: 0.85rem; color: #475569; font-weight: 600;">
-              Total: <strong id="dbAsesorTotalCount" style="color: #0f172a; font-size: 1rem;">-</strong> Asesor
+          <div class="filter-item filter-counter-item">
+            <div class="asesor-total-badge">
+              <span class="badge-label">Total:</span>
+              <strong id="dbAsesorTotalCount" class="badge-number">-</strong>
+              <span class="badge-unit">Asesor</span>
             </div>
           </div>
         </div>

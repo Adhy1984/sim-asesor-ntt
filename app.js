@@ -3591,46 +3591,106 @@ function getClientDeviceInfo() {
       const tbody = document.getElementById('tbodyDbAsesor');
       const countEl = document.getElementById('dbAsesorTotalCount');
 
-      // Standar ZettBOT: Client-Side In-Memory Cache (0 Detik jika sudah ada di cache & bukan manual refresh)
+      // 1. Prioritas Utama: Standar ZettBOT In-Memory Cache (0 Detik jika sudah ada di cache & bukan manual refresh)
       if (!isManual && Array.isArray(DB_ASESOR_STATE.asesors) && DB_ASESOR_STATE.asesors.length > 0) {
         populateDbAsesorFilters(DB_ASESOR_STATE.asesors);
         filterDbAsesorTable();
         return;
       }
 
-      if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: #64748b;">' +
-          '<div class="loader-spinner" style="margin: 0 auto 0.5rem auto; width: 24px; height: 24px; border-width: 2.5px;"></div>' +
-          'Memuat data asesor dari sheet DBAsesor...' +
+      // 2. Auto-Prepopulation Instan 0 Detik dari APP_STATE.daftarAsesor (Stale-While-Revalidate)
+      // Mencegah layar tunggu / loading macet jika user baru pertama kali klik tab
+      let hasPrepopulated = false;
+      if (!isManual && Array.isArray(APP_STATE.daftarAsesor) && APP_STATE.daftarAsesor.length > 0) {
+        DB_ASESOR_STATE.asesors = APP_STATE.daftarAsesor.map(function(item, idx) {
+          return {
+            no: idx + 1,
+            rowNumber: item.rowNumber || (idx + 2),
+            nia: item.nia || ('NIA-' + (1000 + idx)),
+            nama: item.nama || '-',
+            kabupaten: item.kabupaten || '-',
+            instansi: item.instansi || 'Dinas P&K Prov. NTT',
+            jenjang: item.jenjang || 'PAUD/Dikdas',
+            peran: item.peran || 'Asesor',
+            status: item.status || 'Aktif',
+            sediaBertugas: 'Bersedia',
+            noHp: item.hp || item.noHp || '-'
+          };
+        });
+        populateDbAsesorFilters(DB_ASESOR_STATE.asesors);
+        filterDbAsesorTable();
+        hasPrepopulated = true;
+      }
+
+      // Hanya tampilkan baris spinner jika belum ada data sama sekali di memori
+      if (!hasPrepopulated && tbody) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2.5rem; color: #64748b;">' +
+          '<div class="loader-spinner" style="margin: 0 auto 0.75rem auto;"></div>' +
+          '<div>Memuat data profil asesor...</div>' +
         '</td></tr>';
       }
+
+      // Timeout Guard 6 Detik: Mencegah sistem freeze selamanya
+      let isDone = false;
+      const timeoutId = setTimeout(function() {
+        if (!isDone) {
+          isDone = true;
+          if (Array.isArray(DB_ASESOR_STATE.asesors) && DB_ASESOR_STATE.asesors.length > 0) {
+            populateDbAsesorFilters(DB_ASESOR_STATE.asesors);
+            filterDbAsesorTable();
+          } else if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
+              'Pemuatan data melebihi batas waktu (koneksi lambat).' +
+              '<div style="margin-top: 0.5rem;"><button type="button" class="btn-secondary" onclick="fetchDbAsesorList(true)" style="padding: 4px 10px; font-size: 0.75rem;">Coba Lagi</button></div>' +
+            '</td></tr>';
+          }
+        }
+      }, 6000);
+
+      const onFetchSuccess = function(asesorsList) {
+        if (isDone) return;
+        isDone = true;
+        clearTimeout(timeoutId);
+        if (Array.isArray(asesorsList) && asesorsList.length > 0) {
+          DB_ASESOR_STATE.asesors = asesorsList;
+          populateDbAsesorFilters(asesorsList);
+          filterDbAsesorTable();
+          if (isManual) showToast('Data DBAsesor berhasil diperbarui.');
+        } else if (!hasPrepopulated) {
+          DB_ASESOR_STATE.asesors = [];
+          populateDbAsesorFilters([]);
+          filterDbAsesorTable();
+        }
+      };
+
+      const onFetchError = function(errMsg) {
+        if (isDone) return;
+        isDone = true;
+        clearTimeout(timeoutId);
+        if (hasPrepopulated) {
+          console.warn('Sync background DBAsesor gagal:', errMsg);
+          if (isManual) showToast('Gagal menyegarkan data: ' + errMsg, true);
+        } else if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
+            'Gagal memuat DBAsesor: ' + errMsg +
+            '<div style="margin-top: 0.5rem;"><button type="button" class="btn-secondary" onclick="fetchDbAsesorList(true)" style="padding: 4px 10px; font-size: 0.75rem;">Coba Lagi</button></div>' +
+          '</td></tr>';
+        }
+      };
 
       if (APP_STATE.isGoogleAppsScript) {
         google.script.run
           .withSuccessHandler(function(res) {
             if (res && res.success) {
-              DB_ASESOR_STATE.asesors = res.asesors || [];
-              populateDbAsesorFilters(DB_ASESOR_STATE.asesors);
-              filterDbAsesorTable();
-              if (isManual) showToast('Data DBAsesor berhasil diperbarui.');
+              onFetchSuccess(res.asesors || []);
             } else {
-              if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
-                  'Gagal memuat DBAsesor: ' + ((res && res.message) || 'Unknown error') +
-                  '<div style="margin-top: 0.5rem;"><button type="button" class="btn-secondary" onclick="fetchDbAsesorList(true)" style="padding: 4px 10px; font-size: 0.75rem;">Coba Lagi</button></div>' +
-                '</td></tr>';
-              }
+              onFetchError((res && res.message) || 'Unknown error');
             }
           })
           .withFailureHandler(function(err) {
-            if (tbody) {
-              tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
-                'Kesalahan server saat memuat DBAsesor: ' + (err.message || err.toString()) +
-                '<div style="margin-top: 0.5rem;"><button type="button" class="btn-secondary" onclick="fetchDbAsesorList(true)" style="padding: 4px 10px; font-size: 0.75rem;">Coba Lagi</button></div>' +
-              '</td></tr>';
-            }
+            onFetchError(err.message || err.toString());
           })
-          .ambilSemuaDbAsesor(APP_STATE.currentUser);
+          .ambilSemuaDbAsesor();
       } else {
         // Mode Standalone Browser / Vercel API
         const loadFromApiOrFallback = function() {
@@ -3639,15 +3699,12 @@ function getClientDeviceInfo() {
               .then(function(res) { return res.json(); })
               .then(function(res) {
                 if (res && res.success && Array.isArray(res.asesors) && res.asesors.length > 0) {
-                  DB_ASESOR_STATE.asesors = res.asesors;
-                  populateDbAsesorFilters(res.asesors);
-                  filterDbAsesorTable();
-                  if (isManual) showToast('Data DBAsesor berhasil diperbarui.');
+                  onFetchSuccess(res.asesors);
                   return;
                 }
                 fallbackLocal();
               })
-              .catch(function() {
+              .catch(function(err) {
                 fallbackLocal();
               });
           } else {
@@ -3670,7 +3727,7 @@ function getClientDeviceInfo() {
                 peran: item.peran || (idx % 2 === 0 ? 'Asesor 1' : 'Asesor 2'),
                 status: 'Sertifikat Aktif',
                 sediaBertugas: 'Bersedia',
-                noHp: item.noHp || '081234567890'
+                noHp: item.noHp || item.hp || '081234567890'
               };
             });
           }
@@ -3686,13 +3743,10 @@ function getClientDeviceInfo() {
             ];
           }
 
-          DB_ASESOR_STATE.asesors = list;
-          populateDbAsesorFilters(list);
-          filterDbAsesorTable();
-          if (isManual) showToast('Data DBAsesor berhasil diperbarui.');
+          onFetchSuccess(list);
         };
 
-        setTimeout(loadFromApiOrFallback, 100);
+        setTimeout(loadFromApiOrFallback, 150);
       }
     }
 
@@ -3726,6 +3780,15 @@ function getClientDeviceInfo() {
       }
     }
 
+    function clearDbAsesorSearch() {
+      const sInp = document.getElementById('dbAsesorSearchInput');
+      if (sInp) {
+        sInp.value = '';
+        sInp.focus();
+      }
+      filterDbAsesorTable();
+    }
+
     function filterDbAsesorTable() {
       const sInp = document.getElementById('dbAsesorSearchInput');
       const kabSelect = document.getElementById('dbAsesorFilterKab');
@@ -3733,6 +3796,12 @@ function getClientDeviceInfo() {
 
       const q = sInp ? sInp.value.trim().toLowerCase() : '';
       const filterKab = kabSelect ? kabSelect.value.trim().toLowerCase() : '';
+
+      // Tampilkan atau sembunyikan tombol pembersih cepat "✕"
+      const clearBtn = document.getElementById('btnDbAsesorClearSearch');
+      if (clearBtn) {
+        clearBtn.style.display = q ? 'inline-flex' : 'none';
+      }
 
       const filtered = (DB_ASESOR_STATE.asesors || []).filter(function(item) {
         if (filterKab && String(item.kabupaten || '').trim().toLowerCase() !== filterKab) {

@@ -2027,12 +2027,24 @@
     }
 
     .filter-item label {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
       font-size: 0.775rem;
-      font-weight: 600;
-      color: var(--text-muted);
+      font-weight: 700;
+      color: #475569;
       text-transform: uppercase;
-      margin-bottom: 0.35rem;
+      letter-spacing: 0.03em;
+      margin-bottom: 0.45rem;
+    }
+
+    .label-inline-icon {
+      width: 14px;
+      height: 14px;
+      stroke: #64748b;
+      stroke-width: 2.2;
+      fill: none;
+      flex-shrink: 0;
     }
 
     .filter-item select {
@@ -2048,6 +2060,168 @@
 
     .filter-item select:focus {
       border-color: #2563eb;
+    }
+
+    /* ==========================================================================
+       MODERN SEARCH BOX & FILTER CONTROLS (DATA ASESOR - STANDAR ZETTBOT)
+       ========================================================================== */
+    .db-asesor-search-box {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
+
+    .db-asesor-search-box .search-lead-icon {
+      position: absolute;
+      left: 12px;
+      width: 17px;
+      height: 17px;
+      stroke: #64748b;
+      stroke-width: 2.2;
+      fill: none;
+      pointer-events: none;
+      transition: stroke var(--transition-fast);
+    }
+
+    .db-search-input {
+      width: 100%;
+      height: 42px;
+      padding: 0.6rem 2.4rem 0.6rem 2.45rem;
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      transition: all var(--transition-fast);
+    }
+
+    .db-search-input::placeholder {
+      color: #94a3b8;
+      font-size: 0.835rem;
+    }
+
+    .db-search-input:hover {
+      border-color: #94a3b8;
+    }
+
+    .db-search-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      background: #ffffff;
+    }
+
+    .db-asesor-search-box:focus-within .search-lead-icon {
+      stroke: #2563eb;
+    }
+
+    .btn-clear-search {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #e2e8f0;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      color: #475569;
+      transition: all var(--transition-fast);
+      padding: 0;
+    }
+
+    .btn-clear-search:hover {
+      background: #cbd5e1;
+      color: #0f172a;
+      transform: translateY(-50%) scale(1.08);
+    }
+
+    .btn-clear-search svg {
+      width: 13px;
+      height: 13px;
+      stroke: currentColor;
+      stroke-width: 2.5;
+      fill: none;
+    }
+
+    .db-filter-select {
+      width: 100%;
+      height: 42px;
+      padding: 0.6rem 0.85rem;
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .db-filter-select:hover {
+      border-color: #94a3b8;
+    }
+
+    .db-filter-select:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .asesor-total-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      height: 42px;
+      padding: 0 1.1rem;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: var(--radius-md);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+      white-space: nowrap;
+    }
+
+    .asesor-total-badge .badge-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .asesor-total-badge .badge-number {
+      font-family: var(--font-heading);
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #1e3a8a;
+    }
+
+    .asesor-total-badge .badge-unit {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    /* Loader Spinner Standar ZettBOT */
+    .loader-spinner {
+      display: inline-block;
+      width: 26px;
+      height: 26px;
+      border: 2.5px solid #e2e8f0;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spinLoader 0.7s linear infinite;
+    }
+
+    @keyframes spinLoader {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .btn-action-group {
