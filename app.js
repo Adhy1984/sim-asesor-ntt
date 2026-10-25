@@ -951,10 +951,17 @@ function getClientDeviceInfo() {
      * Menerapkan data yang sudah dimuat ke dalam UI dan state
      * Mendukung customTimestamp untuk pemuatan instan dari cache snapshot lintas-tab (v1.0.61)
      */
-    function applyLoadedData(items, daftarAsesor, stats, customTimestamp) {
+    function applyLoadedData(items, daftarAsesor, stats, customTimestamp, dbAsesorList) {
       APP_STATE.items = items;
       APP_STATE.daftarAsesor = daftarAsesor;
       APP_STATE.stats = stats;
+
+      if (Array.isArray(dbAsesorList) && dbAsesorList.length > 0) {
+        DB_ASESOR_STATE.asesors = dbAsesorList;
+        try {
+          localStorage.setItem('SIM_ASESOR_DB_ASESOR_CACHE', JSON.stringify(dbAsesorList));
+        } catch (eDb) {}
+      }
 
       // Format Timestamp Log Tarikan Data (Tanggal & Jam)
       let datePart = '';
@@ -991,6 +998,7 @@ function getClientDeviceInfo() {
           items: items,
           daftarAsesor: daftarAsesor,
           stats: stats,
+          dbAsesor: (Array.isArray(dbAsesorList) && dbAsesorList.length > 0) ? dbAsesorList : (DB_ASESOR_STATE.asesors || []),
           lastSyncTimestamp: formattedTimestamp,
           savedAt: Date.now()
         };
@@ -3633,28 +3641,21 @@ function getClientDeviceInfo() {
         '</td></tr>';
       }
 
-      // Timeout Guard 6 Detik: Mencegah tampilan membeku
-      let isDone = false;
+      // Timeout Guard 45 Detik: Realistis untuk putaran Google Cloud RPC
       const timeoutId = setTimeout(function() {
-        if (!isDone) {
-          isDone = true;
-          if (Array.isArray(DB_ASESOR_STATE.asesors) && DB_ASESOR_STATE.asesors.length > 0) {
-            populateDbAsesorFilters(DB_ASESOR_STATE.asesors);
-            filterDbAsesorTable();
-          } else if (tbody) {
+        if (!DB_ASESOR_STATE.asesors || DB_ASESOR_STATE.asesors.length === 0) {
+          if (tbody) {
             tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
               'Pemuatan data dari sheet DBAsesor melebihi batas waktu (koneksi lambat).' +
               '<div style="margin-top: 0.5rem;"><button type="button" class="btn-secondary" onclick="fetchDbAsesorList(true)" style="padding: 4px 10px; font-size: 0.75rem;">Coba Lagi</button></div>' +
             '</td></tr>';
           }
         }
-      }, 6000);
+      }, 45000);
 
       const onFetchSuccess = function(asesorsList) {
-        if (isDone) return;
-        isDone = true;
         clearTimeout(timeoutId);
-        if (Array.isArray(asesorsList)) {
+        if (Array.isArray(asesorsList) && asesorsList.length > 0) {
           DB_ASESOR_STATE.asesors = asesorsList;
           try {
             localStorage.setItem('SIM_ASESOR_DB_ASESOR_CACHE', JSON.stringify(asesorsList));
@@ -3662,14 +3663,16 @@ function getClientDeviceInfo() {
           populateDbAsesorFilters(asesorsList);
           filterDbAsesorTable();
           if (isManual) showToast('Data DBAsesor (' + asesorsList.length + ' Asesor) berhasil dimuat.');
+        } else if (Array.isArray(asesorsList) && asesorsList.length === 0) {
+          DB_ASESOR_STATE.asesors = [];
+          populateDbAsesorFilters([]);
+          filterDbAsesorTable();
         }
       };
 
       const onFetchError = function(errMsg) {
-        if (isDone) return;
-        isDone = true;
         clearTimeout(timeoutId);
-        if (hasLocalDbCache) {
+        if (hasLocalDbCache || (DB_ASESOR_STATE.asesors && DB_ASESOR_STATE.asesors.length > 0)) {
           console.warn('Gagal sync DBAsesor:', errMsg);
           if (isManual) showToast('Gagal menyegarkan: ' + errMsg, true);
         } else if (tbody) {
