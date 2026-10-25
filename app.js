@@ -3092,6 +3092,16 @@ function getClientDeviceInfo() {
       users: []
     };
 
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     function escapeHtmlAttr(str) {
       return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     }
@@ -3798,31 +3808,49 @@ function getClientDeviceInfo() {
       const tbody = document.getElementById('tbodyDbAsesor');
       if (!tbody) return;
 
-      if (!list || list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2.5rem; color: #64748b;">' +
-          'Tidak ada data asesor yang sesuai dengan filter atau kata kunci pencarian.' +
-        '</td></tr>';
-        return;
+      try {
+        if (!list || list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2.5rem; color: #64748b;">' +
+            'Tidak ada data asesor yang sesuai dengan filter atau kata kunci pencarian.' +
+          '</td></tr>';
+          return;
+        }
+
+        let html = '';
+        for (let i = 0; i < list.length; i++) {
+          const item = list[i] || {};
+          const safeNia = escapeHtml(item.nia || '-');
+          const safeNama = escapeHtml(item.nama || '-');
+          const safeKab = escapeHtml(item.kabupaten || '-');
+          const rowNum = item.rowNumber || (i + 2);
+
+          html += '<tr style="border-bottom: 1px solid #e2e8f0;">' +
+            '<td class="asesor-nia-cell">' + safeNia + '</td>' +
+            '<td class="asesor-nama-cell">' + safeNama + '</td>' +
+            '<td>' + safeKab + '</td>' +
+            '<td style="text-align: center;">' +
+              '<button type="button" class="btn-table-edit" onclick="openEditAsesorModal(\'' + escapeHtmlAttr(safeNia) + '\', ' + rowNum + ')" title="Edit data ' + escapeHtmlAttr(safeNama) + '">Edit</button>' +
+            '</td>' +
+          '</tr>';
+        }
+
+        tbody.innerHTML = html;
+      } catch (err) {
+        console.error('Error renderDbAsesorTable:', err);
+        let fallbackHtml = '';
+        for (let i = 0; i < (list || []).length; i++) {
+          const it = list[i] || {};
+          fallbackHtml += '<tr style="border-bottom: 1px solid #e2e8f0;">' +
+            '<td class="asesor-nia-cell">' + (it.nia || '-') + '</td>' +
+            '<td class="asesor-nama-cell">' + (it.nama || '-') + '</td>' +
+            '<td>' + (it.kabupaten || '-') + '</td>' +
+            '<td style="text-align: center;">' +
+              '<button type="button" class="btn-table-edit" onclick="openEditAsesorModal(\'' + (it.nia || '-') + '\', ' + (it.rowNumber || (i + 2)) + ')">Edit</button>' +
+            '</td>' +
+          '</tr>';
+        }
+        tbody.innerHTML = fallbackHtml;
       }
-
-      let html = '';
-      for (let i = 0; i < list.length; i++) {
-        const item = list[i];
-        const safeNia = escapeHtml(item.nia || '-');
-        const safeNama = escapeHtml(item.nama || '-');
-        const safeKab = escapeHtml(item.kabupaten || '-');
-
-        html += '<tr style="border-bottom: 1px solid #e2e8f0;">' +
-          '<td class="asesor-nia-cell">' + safeNia + '</td>' +
-          '<td class="asesor-nama-cell">' + safeNama + '</td>' +
-          '<td>' + safeKab + '</td>' +
-          '<td style="text-align: center;">' +
-            '<button type="button" class="btn-table-edit" onclick="openEditAsesorModal(\'' + safeNia + '\', ' + (item.rowNumber || (i + 2)) + ')" title="Edit data ' + safeNama + '">Edit</button>' +
-          '</td>' +
-        '</tr>';
-      }
-
-      tbody.innerHTML = html;
     }
 
     function openEditAsesorModal(niaKey, rowNum) {
@@ -3843,16 +3871,21 @@ function getClientDeviceInfo() {
       const modal = document.getElementById('modalEditAsesor');
       if (!modal) return;
 
-      document.getElementById('editAsesorRowNumber').value = found.rowNumber || '';
-      document.getElementById('editAsesorNia').value = found.nia && found.nia !== '-' ? found.nia : '';
-      document.getElementById('editAsesorNama').value = found.nama && found.nama !== '-' ? found.nama : '';
-      document.getElementById('editAsesorStatus').value = found.status || 'Sertifikat Aktif';
-      document.getElementById('editAsesorKab').value = found.kabupaten && found.kabupaten !== '-' ? found.kabupaten : '';
-      document.getElementById('editAsesorSedia').value = found.sediaBertugas || 'Bersedia';
-      document.getElementById('editAsesorHp').value = found.noHp && found.noHp !== '-' ? found.noHp : '';
-      document.getElementById('editAsesorInstansi').value = found.instansi && found.instansi !== '-' ? found.instansi : '';
-      document.getElementById('editAsesorJenjang').value = found.jenjang && found.jenjang !== '-' ? found.jenjang : '';
-      document.getElementById('editAsesorPeran').value = found.peran && found.peran !== '-' ? found.peran : '';
+      const setVal = function(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+      };
+
+      setVal('editAsesorRowNumber', found.rowNumber || '');
+      setVal('editAsesorNia', found.nia && found.nia !== '-' ? found.nia : '');
+      setVal('editAsesorNama', found.nama && found.nama !== '-' ? found.nama : '');
+      setVal('editAsesorStatus', found.status || 'Sertifikat Aktif');
+      setVal('editAsesorKab', found.kabupaten && found.kabupaten !== '-' ? found.kabupaten : '');
+      setVal('editAsesorSedia', found.sediaBertugas || 'Bersedia');
+      setVal('editAsesorHp', found.noHp && found.noHp !== '-' ? found.noHp : '');
+      setVal('editAsesorInstansi', found.instansi && found.instansi !== '-' ? found.instansi : '');
+      setVal('editAsesorJenjang', found.jenjang && found.jenjang !== '-' ? found.jenjang : '');
+      setVal('editAsesorPeran', found.peran && found.peran !== '-' ? found.peran : '');
 
       modal.classList.add('active');
     }
