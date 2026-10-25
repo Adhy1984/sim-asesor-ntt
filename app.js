@@ -3591,46 +3591,39 @@ function getClientDeviceInfo() {
       const tbody = document.getElementById('tbodyDbAsesor');
       const countEl = document.getElementById('dbAsesorTotalCount');
 
-      // 1. Prioritas Utama: Standar ZettBOT In-Memory Cache (0 Detik jika sudah ada di cache & bukan manual refresh)
+      // 1. Prioritas Utama: In-Memory Cache DBAsesor
       if (!isManual && Array.isArray(DB_ASESOR_STATE.asesors) && DB_ASESOR_STATE.asesors.length > 0) {
         populateDbAsesorFilters(DB_ASESOR_STATE.asesors);
         filterDbAsesorTable();
         return;
       }
 
-      // 2. Auto-Prepopulation Instan 0 Detik dari APP_STATE.daftarAsesor (Stale-While-Revalidate)
-      // Mencegah layar tunggu / loading macet jika user baru pertama kali klik tab
-      let hasPrepopulated = false;
-      if (!isManual && Array.isArray(APP_STATE.daftarAsesor) && APP_STATE.daftarAsesor.length > 0) {
-        DB_ASESOR_STATE.asesors = APP_STATE.daftarAsesor.map(function(item, idx) {
-          return {
-            no: idx + 1,
-            rowNumber: item.rowNumber || (idx + 2),
-            nia: item.nia || ('NIA-' + (1000 + idx)),
-            nama: item.nama || '-',
-            kabupaten: item.kabupaten || '-',
-            instansi: item.instansi || 'Dinas P&K Prov. NTT',
-            jenjang: item.jenjang || 'PAUD/Dikdas',
-            peran: item.peran || 'Asesor',
-            status: item.status || 'Aktif',
-            sediaBertugas: 'Bersedia',
-            noHp: item.hp || item.noHp || '-'
-          };
-        });
-        populateDbAsesorFilters(DB_ASESOR_STATE.asesors);
-        filterDbAsesorTable();
-        hasPrepopulated = true;
+      // 2. Pre-population Instan dari Local Storage Khusus DBAsesor (Bukan dari DataPenilaian 241)
+      let hasLocalDbCache = false;
+      if (!isManual && (!DB_ASESOR_STATE.asesors || DB_ASESOR_STATE.asesors.length === 0)) {
+        try {
+          const rawDbCache = localStorage.getItem('SIM_ASESOR_DB_ASESOR_CACHE');
+          if (rawDbCache) {
+            const cachedList = JSON.parse(rawDbCache);
+            if (Array.isArray(cachedList) && cachedList.length > 0) {
+              DB_ASESOR_STATE.asesors = cachedList;
+              populateDbAsesorFilters(cachedList);
+              filterDbAsesorTable();
+              hasLocalDbCache = true;
+            }
+          }
+        } catch (e) {}
       }
 
-      // Hanya tampilkan baris spinner jika belum ada data sama sekali di memori
-      if (!hasPrepopulated && tbody) {
+      // Tampilkan spinner jika belum ada data di memori maupun cache lokal
+      if (!hasLocalDbCache && tbody) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2.5rem; color: #64748b;">' +
           '<div class="loader-spinner" style="margin: 0 auto 0.75rem auto;"></div>' +
-          '<div>Memuat data profil asesor...</div>' +
+          '<div>Memuat data profil asesor dari sheet DBAsesor...</div>' +
         '</td></tr>';
       }
 
-      // Timeout Guard 6 Detik: Mencegah sistem freeze selamanya
+      // Timeout Guard 6 Detik: Mencegah tampilan membeku
       let isDone = false;
       const timeoutId = setTimeout(function() {
         if (!isDone) {
@@ -3640,7 +3633,7 @@ function getClientDeviceInfo() {
             filterDbAsesorTable();
           } else if (tbody) {
             tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
-              'Pemuatan data melebihi batas waktu (koneksi lambat).' +
+              'Pemuatan data dari sheet DBAsesor melebihi batas waktu (koneksi lambat).' +
               '<div style="margin-top: 0.5rem;"><button type="button" class="btn-secondary" onclick="fetchDbAsesorList(true)" style="padding: 4px 10px; font-size: 0.75rem;">Coba Lagi</button></div>' +
             '</td></tr>';
           }
@@ -3651,15 +3644,14 @@ function getClientDeviceInfo() {
         if (isDone) return;
         isDone = true;
         clearTimeout(timeoutId);
-        if (Array.isArray(asesorsList) && asesorsList.length > 0) {
+        if (Array.isArray(asesorsList)) {
           DB_ASESOR_STATE.asesors = asesorsList;
+          try {
+            localStorage.setItem('SIM_ASESOR_DB_ASESOR_CACHE', JSON.stringify(asesorsList));
+          } catch (e) {}
           populateDbAsesorFilters(asesorsList);
           filterDbAsesorTable();
-          if (isManual) showToast('Data DBAsesor berhasil diperbarui.');
-        } else if (!hasPrepopulated) {
-          DB_ASESOR_STATE.asesors = [];
-          populateDbAsesorFilters([]);
-          filterDbAsesorTable();
+          if (isManual) showToast('Data DBAsesor (' + asesorsList.length + ' Asesor) berhasil dimuat.');
         }
       };
 
@@ -3667,13 +3659,14 @@ function getClientDeviceInfo() {
         if (isDone) return;
         isDone = true;
         clearTimeout(timeoutId);
-        if (hasPrepopulated) {
-          console.warn('Sync background DBAsesor gagal:', errMsg);
-          if (isManual) showToast('Gagal menyegarkan data: ' + errMsg, true);
+        if (hasLocalDbCache) {
+          console.warn('Gagal sync DBAsesor:', errMsg);
+          if (isManual) showToast('Gagal menyegarkan: ' + errMsg, true);
         } else if (tbody) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: #ef4444;">' +
-            'Gagal memuat DBAsesor: ' + errMsg +
-            '<div style="margin-top: 0.5rem;"><button type="button" class="btn-secondary" onclick="fetchDbAsesorList(true)" style="padding: 4px 10px; font-size: 0.75rem;">Coba Lagi</button></div>' +
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: #ef4444;">' +
+            '<div style="font-weight: 700; margin-bottom: 0.35rem;">Gagal Memuat Sheet DBAsesor</div>' +
+            '<div style="font-size: 0.85rem; color: #64748b; margin-bottom: 0.75rem;">' + escapeHtml(errMsg) + '</div>' +
+            '<button type="button" class="btn-secondary" onclick="fetchDbAsesorList(true)" style="padding: 6px 14px; font-size: 0.8rem;">Coba Lagi</button>' +
           '</td></tr>';
         }
       };
@@ -3684,7 +3677,7 @@ function getClientDeviceInfo() {
             if (res && res.success) {
               onFetchSuccess(res.asesors || []);
             } else {
-              onFetchError((res && res.message) || 'Unknown error');
+              onFetchError((res && res.message) || 'Sheet DBAsesor tidak dapat diakses.');
             }
           })
           .withFailureHandler(function(err) {
@@ -3693,60 +3686,36 @@ function getClientDeviceInfo() {
           .ambilSemuaDbAsesor();
       } else {
         // Mode Standalone Browser / Vercel API
-        const loadFromApiOrFallback = function() {
+        const loadFromApiOrLocal = function() {
           if (APP_STATE.apiBaseUrl) {
             fetch(APP_STATE.apiBaseUrl + '?action=ambilSemuaDbAsesor')
               .then(function(res) { return res.json(); })
               .then(function(res) {
-                if (res && res.success && Array.isArray(res.asesors) && res.asesors.length > 0) {
+                if (res && res.success && Array.isArray(res.asesors)) {
                   onFetchSuccess(res.asesors);
                   return;
                 }
-                fallbackLocal();
+                fallbackStandalone();
               })
               .catch(function(err) {
-                fallbackLocal();
+                fallbackStandalone();
               });
           } else {
-            fallbackLocal();
+            fallbackStandalone();
           }
         };
 
-        const fallbackLocal = function() {
-          let list = [];
-          if (Array.isArray(APP_STATE.daftarAsesor) && APP_STATE.daftarAsesor.length > 0) {
-            list = APP_STATE.daftarAsesor.map(function(item, idx) {
-              return {
-                no: idx + 1,
-                rowNumber: idx + 2,
-                nia: item.nia || ('NIA-' + (1000 + idx)),
-                nama: item.nama,
-                kabupaten: item.kabupaten || 'Kab. Kupang',
-                instansi: item.instansi || 'Dinas P&K Prov. NTT',
-                jenjang: item.jenjang || 'PAUD/Dikdas',
-                peran: item.peran || (idx % 2 === 0 ? 'Asesor 1' : 'Asesor 2'),
-                status: 'Sertifikat Aktif',
-                sediaBertugas: 'Bersedia',
-                noHp: item.noHp || item.hp || '081234567890'
-              };
-            });
-          }
-
-          if (list.length === 0) {
-            list = [
-              {
-                no: 1, rowNumber: 2, nia: '5371025001', nama: 'Dr. Arifin, M.Pd', kabupaten: 'KOTA KUPANG', instansi: 'BAN PDM Prov. NTT', jenjang: 'PAUD/Dikdas/Dikmen', peran: 'Ketua BAN PDM', status: 'Sertifikat Aktif', sediaBertugas: 'Bersedia', noHp: '081234567890'
-              },
-              {
-                no: 2, rowNumber: 3, nia: '5371025002', nama: 'Adhy Lawa, S.Pd', kabupaten: 'KABUPATEN KUPANG', instansi: 'Dinas P&K NTT', jenjang: 'Dikdas', peran: 'Asesor 1', status: 'Sertifikat Aktif', sediaBertugas: 'Bersedia', noHp: '082144556677'
-              }
-            ];
-          }
-
+        const fallbackStandalone = function() {
+          const list = [
+            { no: 1, rowNumber: 2, nia: '5371025001', nama: 'Dr. Arifin, M.Pd', kabupaten: 'KOTA KUPANG', instansi: 'BAN PDM Prov. NTT', jenjang: 'PAUD/Dikdas/Dikmen', peran: 'Ketua BAN PDM', status: 'Sertifikat Aktif', sediaBertugas: 'Bersedia', noHp: '081234567890' },
+            { no: 2, rowNumber: 3, nia: '5371025002', nama: 'Adhy Lawa, S.Pd', kabupaten: 'KABUPATEN KUPANG', instansi: 'Dinas P&K NTT', jenjang: 'Dikdas', peran: 'Asesor 1', status: 'Sertifikat Aktif', sediaBertugas: 'Bersedia', noHp: '082144556677' },
+            { no: 3, rowNumber: 4, nia: '5371025003', nama: 'Maria Goreti, M.Pd', kabupaten: 'KABUPATEN SIKKA', instansi: 'Dinas P&K Sikka', jenjang: 'Dikdas', peran: 'Asesor 2', status: 'Sertifikat Aktif', sediaBertugas: 'Bersedia', noHp: '081339123456' },
+            { no: 4, rowNumber: 5, nia: '5371025004', nama: 'Petrus Kanisius, S.Ag', kabupaten: 'KABUPATEN MANGGARAI', instansi: 'Kemenag NTT', jenjang: 'Dikmen', peran: 'Asesor 1', status: 'Sertifikat Aktif', sediaBertugas: 'Bersedia', noHp: '085239987654' }
+          ];
           onFetchSuccess(list);
         };
 
-        setTimeout(loadFromApiOrFallback, 150);
+        setTimeout(loadFromApiOrLocal, 150);
       }
     }
 
