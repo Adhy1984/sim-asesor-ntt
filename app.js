@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ================================================================================
  * SIM-ASESOR: vercel/app.js (Isomorphic Universal Client Adapter)
  * ================================================================================
@@ -608,12 +608,10 @@ function getClientDeviceInfo() {
       const navData = document.getElementById('navTabData');
       const navPenugasan = document.getElementById('navTabPenugasan');
       const navPrint = document.getElementById('navTabPrint');
-      const navAsesor = document.getElementById('navTabAsesor');
 
       const mobileNavData = document.getElementById('mobileNavTabData');
       const mobileNavPenugasan = document.getElementById('mobileNavTabPenugasan');
       const mobileNavPrint = document.getElementById('mobileNavTabPrint');
-      const mobileNavAsesor = document.getElementById('mobileNavTabAsesor');
 
       if (roleStr === 'user') {
         const txt = nama ? 'User: ' + nama : 'User: Pengguna';
@@ -628,12 +626,10 @@ function getClientDeviceInfo() {
         if (navData) navData.style.display = 'none';
         if (navPenugasan) navPenugasan.style.display = 'none';
         if (navPrint) navPrint.style.display = 'none';
-        if (navAsesor) navAsesor.style.display = 'none';
 
         if (mobileNavData) mobileNavData.style.display = 'none';
         if (mobileNavPenugasan) mobileNavPenugasan.style.display = 'none';
         if (mobileNavPrint) mobileNavPrint.style.display = 'none';
-        if (mobileNavAsesor) mobileNavAsesor.style.display = 'none';
 
         switchTab('dashboard');
       } else {
@@ -649,12 +645,10 @@ function getClientDeviceInfo() {
         if (navData) navData.style.display = 'flex';
         if (navPenugasan) navPenugasan.style.display = 'flex';
         if (navPrint) navPrint.style.display = 'flex';
-        if (navAsesor) navAsesor.style.display = 'flex';
 
         if (mobileNavData) mobileNavData.style.display = 'flex';
         if (mobileNavPenugasan) mobileNavPenugasan.style.display = 'flex';
         if (mobileNavPrint) mobileNavPrint.style.display = 'flex';
-        if (mobileNavAsesor) mobileNavAsesor.style.display = 'flex';
       }
 
       // Perbarui tabel dashboard agar status badge menyesuaikan izin
@@ -5364,10 +5358,6 @@ function getClientDeviceInfo() {
         print: {
           label: 'Cetak Laporan',
           svg: '<svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'
-        },
-        asesor: {
-          label: 'Data Asesor',
-          svg: '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
         }
       };
       const lblElem = document.getElementById('navDropdownLabel');
@@ -5386,8 +5376,6 @@ function getClientDeviceInfo() {
         renderFullTable();
       } else if (tabKey === 'penugasan') {
         renderPenugasanData();
-      } else if (tabKey === 'asesor') {
-        fetchDbAsesorList(false);
       }
     }
 
@@ -5403,7 +5391,7 @@ function getClientDeviceInfo() {
           return;
         }
 
-        if (rawHash === 'dashboard' || rawHash === 'data' || rawHash === 'penugasan' || rawHash === 'print' || rawHash === 'asesor') {
+        if (rawHash === 'dashboard' || rawHash === 'data' || rawHash === 'penugasan' || rawHash === 'print') {
           switchTab(rawHash);
         } else if (rawHash === 'status-all' || rawHash === 'status-belum' || rawHash === 'status-selesai') {
           switchTab('data');
