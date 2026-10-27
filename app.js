@@ -4170,6 +4170,17 @@ function getClientDeviceInfo() {
         document.getElementById('printSyncTimeMeta').textContent = APP_STATE.lastSyncTimestamp || '-';
       }
 
+      // Sinkronisasi Tanggal Cetak & Tanda Tangan Terkini (v1.0.73)
+      const nowPrint = new Date();
+      const printDateEl = document.getElementById('printDateMeta');
+      if (printDateEl) {
+        printDateEl.textContent = nowPrint.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      }
+      const sigDateEl = document.getElementById('sigDateLabel');
+      if (sigDateEl) {
+        sigDateEl.textContent = 'Kupang, ' + nowPrint.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+      }
+
       if (formatDokumen === 'RINGKAS') {
         // ========================================================
         // FORMAT 2: REKAPITULASI PENILAIAN PER ASESOR (6 KOLOM)
@@ -4446,45 +4457,100 @@ function getClientDeviceInfo() {
     }
 
     /**
-     * Memicu Fungsi Cetak Standar Browser (Ctrl+P / Direct Print) dengan Penamaan File PDF Berisi Tanggal Download
+     * Helper Penamaan File PDF Otomatis Berisi Tanggal Download & Kategori (v1.0.73)
      */
-    function triggerPrint() {
-      // 1. Sinkronkan tanggal cetak/unduh terbaru pada metadata lembar dokumen
-      const now = new Date();
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      const todayStr = now.toLocaleDateString('id-ID', options);
-      const printDateEl = document.getElementById('printDateMeta');
-      if (printDateEl) printDateEl.textContent = todayStr;
-      const sigDateEl = document.getElementById('sigDateLabel');
-      if (sigDateEl) sigDateEl.textContent = 'Kupang, ' + now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+    let originalPageTitle = '';
+    let isPrintTitleActive = false;
 
-      // 2. Format tanggal ISO YYYY-MM-DD untuk nama file hasil download PDF
+    function getPrintPdfFileName(type) {
+      const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const day = String(now.getDate()).padStart(2, '0');
       const dateStr = year + '-' + month + '-' + day;
 
-      const formatDokumen = document.getElementById('printFormatDokumen') ? document.getElementById('printFormatDokumen').value : 'LENGKAP';
-      const filePrefix = formatDokumen === 'RINGKAS' 
-        ? 'Rekapitulasi_Penilaian_Asesor_BAN_PDM_NTT_' 
-        : 'Laporan_Penilaian_Asesor_BAN_PDM_NTT_';
+      if (type === 'penugasan') {
+        const filterWilayah = document.getElementById('penugasanFilterWilayah');
+        let extra = '';
+        if (filterWilayah && filterWilayah.value && filterWilayah.value !== 'ALL') {
+          extra = '_' + filterWilayah.value.trim().replace(/[^a-zA-Z0-9]/g, '_');
+        }
+        return 'Rekapitulasi_Penugasan_Asesor_BAN_PDM_NTT' + extra + '_' + dateStr;
+      }
 
-      const originalTitle = document.title;
-      document.title = filePrefix + dateStr;
+      // type === 'laporan'
+      const formatDokumen = document.getElementById('printFormatDokumen') ? document.getElementById('printFormatDokumen').value : 'LENGKAP';
+      const filterAsesor = document.getElementById('printFilterAsesor') ? document.getElementById('printFilterAsesor').value : 'ALL';
+      let asesorSlug = '';
+      if (filterAsesor && filterAsesor !== 'ALL') {
+        const a = (APP_STATE.daftarAsesor || []).find(function(x) { return x.id === filterAsesor; });
+        if (a && a.nama) {
+          asesorSlug = '_' + a.nama.trim().replace(/[^a-zA-Z0-9]/g, '_');
+        }
+      }
+      const filterTahap = document.getElementById('printFilterTahap') ? document.getElementById('printFilterTahap').value : 'ALL';
+      let tahapSlug = (filterTahap && filterTahap !== 'ALL') ? ('_' + filterTahap.trim().replace(/[^a-zA-Z0-9]/g, '_')) : '';
+
+      if (formatDokumen === 'RINGKAS') {
+        return 'Rekapitulasi_Penilaian_Asesor_BAN_PDM_NTT' + tahapSlug + '_' + dateStr;
+      } else {
+        return 'Laporan_Penilaian_Asesor_BAN_PDM_NTT' + asesorSlug + tahapSlug + '_' + dateStr;
+      }
+    }
+
+    function setDocumentTitleForPrint(fileName) {
+      if (!originalPageTitle) originalPageTitle = document.title;
+      document.title = fileName;
+      try {
+        if (window.top && window.top.document) {
+          window.top.document.title = fileName;
+        }
+      } catch (e) {}
+      isPrintTitleActive = true;
+    }
+
+    function restoreDocumentTitleAfterPrint() {
+      if (!isPrintTitleActive) return;
+      isPrintTitleActive = false;
+      if (originalPageTitle) {
+        document.title = originalPageTitle;
+        try {
+          if (window.top && window.top.document) {
+            window.top.document.title = originalPageTitle;
+          }
+        } catch (e) {}
+      }
+    }
+
+    /**
+     * Memicu Fungsi Cetak Standar Browser (Ctrl+P / Direct Print) dengan Penamaan File PDF Berisi Tanggal Download
+     */
+    function triggerPrint() {
+      // 1. Sinkronkan tanggal cetak/unduh terbaru pada metadata lembar dokumen
+      const now = new Date();
+      const todayStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const printDateEl = document.getElementById('printDateMeta');
+      if (printDateEl) printDateEl.textContent = todayStr;
+      const sigDateEl = document.getElementById('sigDateLabel');
+      if (sigDateEl) sigDateEl.textContent = 'Kupang, ' + now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+
+      // 2. Format tanggal & nama file otomatis hasil download PDF
+      const pdfFileName = getPrintPdfFileName('laporan');
+      setDocumentTitleForPrint(pdfFileName);
 
       // Kembalikan judul halaman semula setelah dialog cetak/simpan PDF selesai
-      const restoreTitle = function() {
-        document.title = originalTitle;
-        window.removeEventListener('afterprint', restoreTitle);
+      const onAfterPrint = function() {
+        restoreDocumentTitleAfterPrint();
+        window.removeEventListener('afterprint', onAfterPrint);
       };
-      window.addEventListener('afterprint', restoreTitle);
+      window.addEventListener('afterprint', onAfterPrint);
 
       window.print();
 
-      // Fallback timer jika browser tidak memicu event afterprint
+      // Proteksi fallback waktu aman 60 detik (bukan 1.5 detik) agar browser sempat memproses Save as PDF
       setTimeout(function() {
-        document.title = originalTitle;
-      }, 1500);
+        restoreDocumentTitleAfterPrint();
+      }, 60000);
     }
 
     /**
@@ -5025,35 +5091,57 @@ function getClientDeviceInfo() {
     function triggerPrintPenugasan() {
       // 1. Sinkronkan tanggal cetak/unduh terbaru pada metadata penugasan
       const now = new Date();
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      const todayStr = now.toLocaleDateString('id-ID', options);
+      const todayStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
       const metaDate = document.getElementById('penugasanMetaDate');
       if (metaDate) metaDate.textContent = todayStr;
       const sigDateEl = document.getElementById('penugasanSigDate');
       if (sigDateEl) sigDateEl.textContent = 'Kupang, ' + now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
 
-      // 2. Format tanggal ISO YYYY-MM-DD untuk nama file hasil download PDF
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const dateStr = year + '-' + month + '-' + day;
+      // 2. Format tanggal & nama file otomatis hasil download PDF
+      const pdfFileName = getPrintPdfFileName('penugasan');
+      setDocumentTitleForPrint(pdfFileName);
 
-      const originalTitle = document.title;
-      document.title = 'Rekapitulasi_Penugasan_Asesor_BAN_PDM_NTT_' + dateStr;
-
-      const restoreTitle = function() {
-        document.title = originalTitle;
-        window.removeEventListener('afterprint', restoreTitle);
+      const onAfterPrint = function() {
+        restoreDocumentTitleAfterPrint();
+        window.removeEventListener('afterprint', onAfterPrint);
       };
-      window.addEventListener('afterprint', restoreTitle);
+      window.addEventListener('afterprint', onAfterPrint);
 
       window.print();
 
-      // Fallback timer jika browser tidak memicu event afterprint
+      // Proteksi fallback waktu aman 60 detik (bukan 1.5 detik) agar browser sempat memproses Save as PDF
       setTimeout(function() {
-        document.title = originalTitle;
-      }, 1500);
+        restoreDocumentTitleAfterPrint();
+      }, 60000);
     }
+
+    // Listener Global Pencetakan Browser (Ctrl+P / Menu Cetak Browser - v1.0.73)
+    window.addEventListener('beforeprint', function() {
+      const now = new Date();
+      const todayStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const todaySig = 'Kupang, ' + now.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+
+      const tabPenugasan = document.getElementById('tab-penugasan');
+      const isPenugasanActive = tabPenugasan && (tabPenugasan.classList.contains('active') || tabPenugasan.style.display === 'block');
+
+      if (isPenugasanActive) {
+        const metaDate = document.getElementById('penugasanMetaDate');
+        if (metaDate) metaDate.textContent = todayStr;
+        const sigDateEl = document.getElementById('penugasanSigDate');
+        if (sigDateEl) sigDateEl.textContent = todaySig;
+        setDocumentTitleForPrint(getPrintPdfFileName('penugasan'));
+      } else {
+        const printDateEl = document.getElementById('printDateMeta');
+        if (printDateEl) printDateEl.textContent = todayStr;
+        const sigDateEl = document.getElementById('sigDateLabel');
+        if (sigDateEl) sigDateEl.textContent = todaySig;
+        setDocumentTitleForPrint(getPrintPdfFileName('laporan'));
+      }
+    });
+
+    window.addEventListener('afterprint', function() {
+      restoreDocumentTitleAfterPrint();
+    });
 
     /**
      * Ekspor Data Penugasan Asesor ke File Microsoft Excel Asli (.xlsx) Lengkap dengan Struktur Tabel
