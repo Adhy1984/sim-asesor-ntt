@@ -76,7 +76,8 @@ function getClientDeviceInfo() {
       return;
     }
 
-    const requestBody = Object.assign({ action: action }, payload || {});
+    const activeToken = (APP_STATE && APP_STATE.sessionToken) || sessionStorage.getItem('SIM_ASESOR_SESSION_TOKEN') || localStorage.getItem('SIM_ASESOR_SESSION_TOKEN');
+    const requestBody = Object.assign({ action: action, token: activeToken }, payload || {});
 
     fetch(gasUrl, {
       method: 'POST',
@@ -468,7 +469,7 @@ function getClientDeviceInfo() {
               btnSubmit.innerHTML = '<span>Masuk ke Sistem</span><svg width="18" height="18" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
             }
             if (res && res.success) {
-              loginSuccess(res.user);
+              loginSuccess(res.user, res.token);
             } else {
               if (errMsg) {
                 errMsg.textContent = (res && res.message) ? res.message : 'Username atau password tidak cocok.';
@@ -510,7 +511,14 @@ function getClientDeviceInfo() {
       }
     }
 
-    function loginSuccess(userData) {
+    function loginSuccess(userData, sessionToken) {
+      if (sessionToken) {
+        APP_STATE.sessionToken = sessionToken;
+        try {
+          sessionStorage.setItem('SIM_ASESOR_SESSION_TOKEN', sessionToken);
+          localStorage.setItem('SIM_ASESOR_SESSION_TOKEN', sessionToken);
+        } catch (e) {}
+      }
       let userObj = userData;
       if (typeof userData === 'string') {
         const roleCapitalized = userData.toLowerCase() === 'admin' ? 'Admin' : 'User';
@@ -543,6 +551,14 @@ function getClientDeviceInfo() {
     }
 
     function handleLogout(e, isTimeout) {
+      if (APP_STATE.isGoogleAppsScript && APP_STATE.sessionToken) {
+        try { google.script.run.logoutUser(APP_STATE.sessionToken); } catch (eLogout) {}
+      }
+      APP_STATE.sessionToken = null;
+      try {
+        sessionStorage.removeItem('SIM_ASESOR_SESSION_TOKEN');
+        localStorage.removeItem('SIM_ASESOR_SESSION_TOKEN');
+      } catch (eTok) {}
       if (e && e.preventDefault) e.preventDefault();
       const userMenu = document.getElementById('userDropdownMenu');
       const userWrapper = document.getElementById('userDropdownWrapper');
