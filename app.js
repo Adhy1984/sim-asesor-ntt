@@ -747,12 +747,19 @@ function getClientDeviceInfo() {
       if (isExpired) {
         sessionStorage.removeItem('SIM_ASESOR_USER');
         sessionStorage.removeItem('SIM_ASESOR_ROLE');
+        sessionStorage.removeItem('SIM_ASESOR_SESSION_TOKEN');
         try {
           localStorage.removeItem('SIM_ASESOR_USER');
           localStorage.removeItem('SIM_ASESOR_ROLE');
+          localStorage.removeItem('SIM_ASESOR_SESSION_TOKEN');
           localStorage.removeItem('SIM_ASESOR_LAST_ACTIVITY');
           localStorage.removeItem('SIM_ASESOR_DATA_CACHE');
         } catch (e) {}
+      }
+
+      let storedToken = sessionStorage.getItem('SIM_ASESOR_SESSION_TOKEN');
+      if (!storedToken) {
+        try { storedToken = localStorage.getItem('SIM_ASESOR_SESSION_TOKEN'); } catch (e) {}
       }
 
       let savedUserStr = sessionStorage.getItem('SIM_ASESOR_USER');
@@ -761,22 +768,29 @@ function getClientDeviceInfo() {
       }
       const overlay = document.getElementById('loginOverlay');
 
-      if (savedUserStr && !isExpired) {
+      if (savedUserStr && storedToken && !isExpired) {
         try {
           const userObj = JSON.parse(savedUserStr);
           APP_STATE.currentUser = userObj;
+          APP_STATE.sessionToken = storedToken;
           document.documentElement.classList.add('is-authenticated');
           recordUserActivity();
           if (overlay) overlay.style.display = 'none';
           if (document.body) document.body.classList.remove('login-active');
           applyUserRole(userObj.role, userObj.nama);
         } catch (e) {
-          document.documentElement.classList.remove('is-authenticated');
-          if (overlay) overlay.style.display = 'flex';
-          if (document.body) document.body.classList.add('login-active');
-          startLoginPlexusEffect();
+          handleLogout();
         }
       } else {
+        if (savedUserStr && !storedToken) {
+          sessionStorage.removeItem('SIM_ASESOR_USER');
+          sessionStorage.removeItem('SIM_ASESOR_ROLE');
+          try {
+            localStorage.removeItem('SIM_ASESOR_USER');
+            localStorage.removeItem('SIM_ASESOR_ROLE');
+            localStorage.removeItem('SIM_ASESOR_SESSION_TOKEN');
+          } catch (e) {}
+        }
         document.documentElement.classList.remove('is-authenticated');
         if (overlay) overlay.style.display = 'flex';
         if (document.body) document.body.classList.add('login-active');
