@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ================================================================================
  * SIM-ASESOR: vercel/app.js (Isomorphic Universal Client Adapter)
  * ================================================================================
@@ -437,6 +437,176 @@ function getClientDeviceInfo() {
     /**
      * Manajemen Sesi & Autentikasi Pengguna (Database Sheet DataUser)
      */
+    /**
+     * ================================================================================
+     * KONFIGURASI GOOGLE OAUTH 2.0 CLIENT ID (Model 2 Whitelist)
+     * ================================================================================
+     * Ganti string di bawah ini dengan Client ID dari Google Cloud Console Anda:
+     */
+    const GOOGLE_OAUTH_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com';
+
+    /**
+     * Dekode JWT Payload dari Google Identity Services
+     */
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    /**
+     * Inisialisasi Google Identity Services (GIS)
+     */
+    function initGoogleSignIn() {
+      const gContainer = document.getElementById('googleBtnContainer');
+      const placeholderBtn = document.getElementById('btnGooglePlaceholder');
+      
+      const isPlaceholder = !GOOGLE_OAUTH_CLIENT_ID || 
+                            GOOGLE_OAUTH_CLIENT_ID.indexOf('YOUR_GOOGLE_CLIENT_ID_HERE') !== -1 ||
+                            GOOGLE_OAUTH_CLIENT_ID.trim() === '';
+
+      if (isPlaceholder) {
+        // Tampilkan tombol placeholder dengan indikator siap pakai
+        if (gContainer) gContainer.style.display = 'none';
+        if (placeholderBtn) placeholderBtn.style.display = 'flex';
+        return;
+      }
+
+      // Jika Client ID sudah diisi, render tombol resmi Google
+      if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+        try {
+          google.accounts.id.initialize({
+            client_id: GOOGLE_OAUTH_CLIENT_ID,
+            callback: handleGoogleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true
+          });
+
+          if (placeholderBtn) placeholderBtn.style.display = 'none';
+          if (gContainer) {
+            gContainer.style.display = 'block';
+            gContainer.innerHTML = '';
+            google.accounts.id.renderButton(gContainer, {
+              type: 'standard',
+              theme: 'outline',
+              size: 'large',
+              text: 'signin_with',
+              shape: 'rectangular',
+              logo_alignment: 'left',
+              width: 320
+            });
+          }
+        } catch (err) {
+          console.warn('Google Identity initialization error:', err);
+          if (placeholderBtn) placeholderBtn.style.display = 'flex';
+        }
+      } else {
+        // Retry jika script GIS belum selesai termuat
+        setTimeout(initGoogleSignIn, 500);
+      }
+    }
+
+    /**
+     * Handler saat tombol placeholder Google diklik sebelum Client ID diganti
+     */
+    function handleGooglePlaceholderClick() {
+      const errMsg = document.getElementById('loginErrorMsg');
+      const infoMsg = 'Tanda pengenal Google Client ID aktif (Placeholder). Untuk mengaktifkan pop-up akun Google, silakan pasang Client ID Anda pada GOOGLE_OAUTH_CLIENT_ID di file script. Anda tetap bisa masuk menggunakan form nama pengguna & kata sandi di bawah.';
+      if (errMsg) {
+        errMsg.textContent = infoMsg;
+        errMsg.style.display = 'block';
+      }
+      showToast(infoMsg, 'info', 7000);
+    }
+
+    /**
+     * Callback setelah pengguna memilih akun Google di pop-up resmi
+     */
+    function handleGoogleCredentialResponse(response) {
+      const errMsg = document.getElementById('loginErrorMsg');
+      if (errMsg) errMsg.style.display = 'none';
+
+      if (!response || !response.credential) {
+        if (errMsg) {
+          errMsg.textContent = 'Gagal memverifikasi akun Google: Kredensial tidak diterima.';
+          errMsg.style.display = 'block';
+        }
+        return;
+      }
+
+      const payload = parseJwt(response.credential);
+      const email = payload && payload.email ? payload.email : '';
+      const name = payload && payload.name ? payload.name : '';
+      const devType = getClientDeviceInfo();
+
+      if (!email) {
+        if (errMsg) {
+          errMsg.textContent = 'Gagal membaca alamat email dari akun Google.';
+          errMsg.style.display = 'block';
+        }
+        return;
+      }
+
+      showToast('Memverifikasi whitelist email: ' + email + '...', 'info', 3000);
+
+      if (APP_STATE.isGoogleAppsScript) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.success) {
+              loginSuccess(res.user, res.token || res.sessionToken);
+              showToast('Selamat datang, ' + (res.user.nama || email) + '!', 'success');
+            } else {
+              if (errMsg) {
+                errMsg.textContent = (res && res.message) ? res.message : 'Akun Google Anda belum terdaftar di sistem SIM-ASESOR.';
+                errMsg.style.display = 'block';
+              }
+              showToast((res && res.message) ? res.message : 'Akses ditolak: Email belum terdaftar.', 'error', 6000);
+            }
+          })
+          .withFailureHandler(function(err) {
+            if (errMsg) {
+              errMsg.textContent = 'Gagal menghubungi server database: ' + err.toString();
+              errMsg.style.display = 'block';
+            }
+            showToast('Gagal verifikasi server: ' + err.toString(), 'error', 5000);
+          })
+          .loginWithGoogle(email, response.credential, devType);
+      } else {
+        // Mode Vercel / Web API Standalone
+        fetch('/api/login-google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, idToken: response.credential, device: devType })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+          if (res && res.success) {
+            loginSuccess(res.user, res.token || res.sessionToken);
+            showToast('Selamat datang, ' + (res.user.nama || email) + '!', 'success');
+          } else {
+            if (errMsg) {
+              errMsg.textContent = (res && res.message) ? res.message : 'Akses ditolak: Email belum terdaftar.';
+              errMsg.style.display = 'block';
+            }
+            showToast((res && res.message) ? res.message : 'Akses ditolak: Email belum terdaftar.', 'error', 6000);
+          }
+        })
+        .catch(function(err) {
+          if (errMsg) {
+            errMsg.textContent = 'Akses ditolak: Email ' + email + ' belum terdaftar di database.';
+            errMsg.style.display = 'block';
+          }
+        });
+      }
+    }
+
     function submitLogin(e) {
       if (e) e.preventDefault();
       const userInp = document.getElementById('loginUsername');
@@ -740,6 +910,7 @@ function getClientDeviceInfo() {
       initMobileDrawerLogo();
       initOpenInNewTabOnButtons();
       initSessionIdleManager();
+      initGoogleSignIn();
 
       // Validasi batas inaktivitas 15 menit sebelum memulihkan sesi
       const lastAct = parseInt(localStorage.getItem('SIM_ASESOR_LAST_ACTIVITY') || '0', 10);
