@@ -2297,21 +2297,21 @@
       display: flex;
       align-items: center;
       border-bottom: 2.5px solid #0f172a;
-      padding-bottom: 1rem;
+      padding-bottom: 0.75rem;
       margin-bottom: 1.25rem;
       gap: 1.5rem;
     }
 
     .kop-logo {
-      width: 75px;
-      height: 75px;
+      width: 145px;
+      height: 105px;
       border-radius: var(--radius-sm);
-      background: #ffffff;
+      background: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      padding: 2px;
+      padding: 0;
     }
 
     .kop-logo img,
@@ -2319,6 +2319,7 @@
       width: 100%;
       height: 100%;
       object-fit: contain;
+      display: block;
     }
 
     .kop-text {
@@ -2692,12 +2693,51 @@
          break-inside: auto !important;
        }
 
-       .kop-surat,
-       .report-metadata-box,
-       .print-signatures-row {
-         page-break-inside: avoid !important;
-         break-inside: avoid !important;
-       }
+             .kop-surat,
+      body .kop-surat {
+        display: flex !important;
+        align-items: center !important;
+        border-bottom: 2.5px solid #0f172a !important;
+        padding-bottom: 0.75rem !important;
+        margin-bottom: 1.25rem !important;
+        gap: 1.5rem !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .kop-logo,
+      body .kop-logo {
+        width: 145px !important;
+        height: 105px !important;
+        max-width: 145px !important;
+        max-height: 105px !important;
+        background: transparent !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+      }
+
+      .kop-logo img,
+      .kop-logo svg,
+      .ban-pdm-logo-img,
+      body .kop-logo img,
+      body .kop-logo svg,
+      body .ban-pdm-logo-img {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        object-fit: contain !important;
+        display: block !important;
+      }
+
+      .report-metadata-box,
+      .print-signatures-row {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
 
        .report-metadata-box {
          overflow: visible !important;
