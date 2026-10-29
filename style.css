@@ -3845,17 +3845,31 @@
     .google-login-section {
       margin-bottom: 1.15rem;
       width: 100%;
+      max-width: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
+      overflow: hidden;
+      box-sizing: border-box;
     }
 
     .google-btn-container {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      margin-bottom: 0.25rem;
+      width: 100% !important;
+      max-width: 280px !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      margin: 0 auto 0.25rem auto !important;
       min-height: 44px;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+    }
+
+    .google-btn-container iframe {
+      max-width: 280px !important;
+      margin: 0 auto !important;
+      box-sizing: border-box !important;
+      border-radius: var(--radius-md) !important;
     }
 
     .btn-google-sign-in {
@@ -4263,17 +4277,31 @@
     .google-login-section {
       margin-bottom: 1.15rem;
       width: 100%;
+      max-width: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
+      overflow: hidden;
+      box-sizing: border-box;
     }
 
     .google-btn-container {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      margin-bottom: 0.25rem;
+      width: 100% !important;
+      max-width: 280px !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      margin: 0 auto 0.25rem auto !important;
       min-height: 44px;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+    }
+
+    .google-btn-container iframe {
+      max-width: 280px !important;
+      margin: 0 auto !important;
+      box-sizing: border-box !important;
+      border-radius: var(--radius-md) !important;
     }
 
     .btn-google-sign-in {

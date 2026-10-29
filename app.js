@@ -485,14 +485,20 @@ function initGoogleSignIn() {
       google.accounts.id.initialize({
         client_id: GOOGLE_OAUTH_CLIENT_ID,
         callback: handleGoogleCredentialResponse,
-        auto_select: false,
+        auto_select: true, // Otomatis login jika akun terdaftar di browser
         cancel_on_tap_outside: true
       });
 
       if (placeholderBtn) placeholderBtn.style.display = 'none';
       if (gContainer) {
-        gContainer.style.display = 'block';
+        gContainer.style.display = 'flex';
         gContainer.innerHTML = '';
+
+        // Hitung lebar dinamis responsif agar pas dan presisi di HP (tidak meluber keluar kartu)
+        var cardElem = document.querySelector('.login-card');
+        var cardInnerWidth = cardElem ? (cardElem.clientWidth - 44) : 280;
+        var targetWidth = Math.min(280, Math.max(220, Math.round(cardInnerWidth)));
+
         google.accounts.id.renderButton(gContainer, {
           type: 'standard',
           theme: 'outline',
@@ -500,8 +506,15 @@ function initGoogleSignIn() {
           text: 'signin_with',
           shape: 'rectangular',
           logo_alignment: 'left',
-          width: 320
+          width: targetWidth
         });
+
+        // Picu Google One Tap Otomatis (Auto-Login jika user sudah ada sesi Google aktif)
+        try {
+          google.accounts.id.prompt();
+        } catch (promptErr) {
+          console.warn('Google One Tap prompt warning:', promptErr);
+        }
       }
     } catch (err) {
       console.warn('Google Identity initialization error:', err);
