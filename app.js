@@ -503,19 +503,14 @@ function initGoogleSignIn(forceClean) {
         gContainer.style.display = 'flex';
         gContainer.innerHTML = '';
 
-        // Hitung lebar dinamis responsif agar pas dan presisi di HP (tidak meluber keluar kartu)
-        var cardElem = document.querySelector('.login-card');
-        var cardInnerWidth = cardElem ? (cardElem.clientWidth - 44) : 280;
-        var targetWidth = Math.min(280, Math.max(220, Math.round(cardInnerWidth)));
-
+        // Render tombol resmi Google dengan ukuran alami presisi tanpa pemotongan garis (Standar ZettBOT v1.0.80)
         google.accounts.id.renderButton(gContainer, {
           type: 'standard',
           theme: 'outline',
           size: 'large',
           text: 'signin_with',
           shape: 'rectangular',
-          logo_alignment: 'left',
-          width: targetWidth
+          logo_alignment: 'left'
         });
       }
     } catch (err) {

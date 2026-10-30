@@ -1,4 +1,4 @@
-    /* ==========================================================================
+﻿    /* ==========================================================================
        DESIGN SYSTEM & CSS TOKENS (Human-Crafted Anti-AI Aesthetic)
        ========================================================================== */
     :root {
@@ -4273,49 +4273,53 @@
         text-wrap: balance;
       }
 
-      /* Google Sign-In & Login Divider (Model 2 Whitelist) */
+      /* Google Sign-In & Login Divider (Model 2 Whitelist - Standar ZettBOT v1.0.80) */
     .google-login-section {
-      margin-bottom: 1.15rem;
+      margin-bottom: 0.5rem;
       width: 100%;
       max-width: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
-      overflow: hidden;
+      justify-content: center;
+      overflow: visible;
       box-sizing: border-box;
     }
 
     .google-btn-container {
       width: 100% !important;
-      max-width: 280px !important;
       display: flex !important;
       justify-content: center !important;
       align-items: center !important;
-      margin: 0 auto 0.25rem auto !important;
+      margin: 0 auto !important;
       min-height: 44px;
-      overflow: hidden !important;
+      overflow: visible !important;
       box-sizing: border-box !important;
     }
 
     .google-btn-container iframe {
-      max-width: 280px !important;
       margin: 0 auto !important;
       box-sizing: border-box !important;
-      border-radius: var(--radius-md) !important;
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      overflow: visible !important;
     }
 
     .btn-google-sign-in {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.75rem;
+      gap: 0.65rem;
       width: 100%;
-      padding: 0.72rem 1.15rem;
+      max-width: 260px;
+      margin: 0 auto;
+      padding: 0.68rem 1rem;
       background: #ffffff;
       color: #1f2937;
       border: 1.5px solid #e2e8f0;
       border-radius: var(--radius-md);
-      font-size: 0.885rem;
+      font-size: 0.85rem;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
@@ -4343,11 +4347,11 @@
       display: flex;
       align-items: center;
       width: 100%;
-      margin: 1.15rem 0 0.35rem 0;
+      margin: 1.25rem 0 1rem 0;
       color: #94a3b8;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       font-weight: 600;
     }
 
@@ -4362,7 +4366,6 @@
     .login-divider span {
       padding: 0 0.75rem;
     }
-
     .login-field-group {
         margin-bottom: 0.95rem;
       }
