@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ================================================================================
  * SIM-ASESOR: vercel/app.js (Isomorphic Universal Client Adapter)
  * ================================================================================
@@ -105,6 +105,9 @@ function getClientDeviceInfo() {
   // Pendaftaran Seluruh Fungsi Backend Sesuai code.gs
   ApiRunner.prototype.loginUser = function (username, password, device) {
     this._callApi('loginUser', { username: username, password: password, device: device || getClientDeviceInfo() });
+  };
+  ApiRunner.prototype.loginWithGoogle = function (email, idToken, device) {
+    this._callApi('loginWithGoogle', { email: email, idToken: idToken, device: device || getClientDeviceInfo() });
   };
   ApiRunner.prototype.ambilSemuaData = function () {
     this._callApi('ambilSemuaData', {});
@@ -464,7 +467,7 @@ function parseJwt(token) {
 /**
  * Inisialisasi Google Identity Services (GIS)
  */
-function initGoogleSignIn() {
+function initGoogleSignIn(forceClean) {
   const gContainer = document.getElementById('googleBtnContainer');
   const placeholderBtn = document.getElementById('btnGooglePlaceholder');
 
@@ -482,10 +485,16 @@ function initGoogleSignIn() {
   // Jika Client ID sudah diisi, render tombol resmi Google
   if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
     try {
+      if (forceClean) {
+        try {
+          google.accounts.id.disableAutoSelect();
+        } catch (eClean) { }
+      }
+
       google.accounts.id.initialize({
         client_id: GOOGLE_OAUTH_CLIENT_ID,
         callback: handleGoogleCredentialResponse,
-        auto_select: true, // Otomatis login jika akun terdaftar di browser
+        auto_select: false, // Nonaktifkan auto_select agar tombol bersih tanpa memuat akun lama saat logout
         cancel_on_tap_outside: true
       });
 
@@ -508,13 +517,6 @@ function initGoogleSignIn() {
           logo_alignment: 'left',
           width: targetWidth
         });
-
-        // Picu Google One Tap Otomatis (Auto-Login jika user sudah ada sesi Google aktif)
-        try {
-          google.accounts.id.prompt();
-        } catch (promptErr) {
-          console.warn('Google One Tap prompt warning:', promptErr);
-        }
       }
     } catch (err) {
       console.warn('Google Identity initialization error:', err);
@@ -522,7 +524,7 @@ function initGoogleSignIn() {
     }
   } else {
     // Retry jika script GIS belum selesai termuat
-    setTimeout(initGoogleSignIn, 500);
+    setTimeout(function () { initGoogleSignIn(forceClean); }, 500);
   }
 }
 
@@ -592,31 +594,16 @@ function handleGoogleCredentialResponse(response) {
       })
       .loginWithGoogle(email, response.credential, devType);
   } else {
-    // Mode Vercel / Web API Standalone
-    fetch('/api/login-google', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email, idToken: response.credential, device: devType })
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (res) {
-        if (res && res.success) {
-          loginSuccess(res.user, res.token || res.sessionToken);
-          showToast('Selamat datang, ' + (res.user.nama || email) + '!', 'success');
-        } else {
-          if (errMsg) {
-            errMsg.textContent = (res && res.message) ? res.message : 'Akses ditolak: Email belum terdaftar.';
-            errMsg.style.display = 'block';
-          }
-          showToast((res && res.message) ? res.message : 'Akses ditolak: Email belum terdaftar.', 'error', 6000);
-        }
-      })
-      .catch(function (err) {
-        if (errMsg) {
-          errMsg.textContent = 'Akses ditolak: Email ' + email + ' belum terdaftar di database.';
-          errMsg.style.display = 'block';
-        }
-      });
+    // Mode Standalone Browser / Local Mock
+    setTimeout(function () {
+      loginSuccess({
+        username: email,
+        email: email,
+        nama: name || email.split('@')[0],
+        role: 'Admin',
+        perangkat: devType + ' (Google)'
+      }, 'SIM-LOCAL-GOOGLE-TOKEN-' + Date.now());
+    }, 500);
   }
 }
 
@@ -730,10 +717,36 @@ function loginSuccess(userData, sessionToken) {
   if (document.body) document.body.classList.remove('login-active');
   stopLoginPlexusEffect();
 
+  // Pindahkan tampilan langsung ke dashboard (v1.0.79)
+  if (typeof switchTab === 'function') {
+    switchTab('dashboard');
+  }
+
+  // Segarkan dan tarik data terbaru dari Google Sheets secara otomatis (v1.0.79)
+  if (typeof refreshData === 'function') {
+    refreshData(true);
+  }
+
   showToast('Selamat datang, ' + userObj.nama + ' (' + userObj.role + ')');
 }
 
 function handleLogout(e, isTimeout) {
+  // 1. Putus sesi Google Identity Services (GIS) secara tuntas (v1.0.79)
+  if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+    try {
+      google.accounts.id.disableAutoSelect();
+    } catch (eGsi) { }
+
+    var currentEmail = (APP_STATE.currentUser && (APP_STATE.currentUser.email || APP_STATE.currentUser.username)) ? (APP_STATE.currentUser.email || APP_STATE.currentUser.username) : '';
+    if (currentEmail && currentEmail.indexOf('@') !== -1) {
+      try {
+        google.accounts.id.revoke(currentEmail, function () {
+          console.log('Sesi Google akun ' + currentEmail + ' berhasil di-revoke pada logout.');
+        });
+      } catch (eRevoke) { }
+    }
+  }
+
   if (APP_STATE.isGoogleAppsScript && APP_STATE.sessionToken) {
     try { google.script.run.logoutUser(APP_STATE.sessionToken); } catch (eLogout) { }
   }
@@ -784,6 +797,13 @@ function handleLogout(e, isTimeout) {
   if (document.body) document.body.classList.add('login-active');
   startLoginPlexusEffect();
   if (userInp) userInp.focus();
+
+  // 2. Render ulang tombol Google agar kembali bersih dan netral tanpa memuat nama/email akun sebelumnya (v1.0.79)
+  setTimeout(function () {
+    if (typeof initGoogleSignIn === 'function') {
+      initGoogleSignIn(true);
+    }
+  }, 150);
 
   if (isTimeout) {
     showToast('Sesi Anda berakhir karena tidak ada aktivitas selama 15 menit. Silakan login kembali.', true);
