@@ -175,6 +175,143 @@ const APP_STATE = {
   currentFullItems: []
 };
 
+  // ============================================================================
+  // TOP SLIM SIMULATED PROGRESS CONTROLLER (STANDAR REKOMENDASI 1 v1.0.83)
+  // Algoritma Asimtotik Pseudo-Progress dengan Loncatan Acak & Auto-Snap 100%
+  // ============================================================================
+  const TOP_PROGRESS = {
+    currentPercent: 0,
+    timer: null,
+    isCompleted: false,
+    activeRequests: 0,
+
+    start: function () {
+      this.activeRequests++;
+      if (this.activeRequests > 1 && this.timer) {
+        return;
+      }
+
+      this.isCompleted = false;
+      this.currentPercent = 0;
+
+      const container = document.getElementById('topProgressBarContainer');
+      const bar = document.getElementById('topProgressBar');
+      const text = document.getElementById('topProgressText');
+
+      if (container) {
+        container.classList.add('is-active');
+        container.style.opacity = '1';
+        container.style.visibility = 'visible';
+      }
+      if (bar) {
+        bar.style.transition = 'width 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+        bar.style.width = '0%';
+      }
+      if (text) text.textContent = '0%';
+
+      if (this.timer) {
+        clearInterval(this.timer);
+        this.timer = null;
+      }
+
+      // Fase 1: Umpan balik instan 60ms pertama (lompat ke 12% - 20%)
+      const self = this;
+      setTimeout(function () {
+        if (!self.isCompleted && self.currentPercent < 15) {
+          self.setPercent(Math.floor(Math.random() * 9) + 12);
+        }
+      }, 60);
+
+      // Fase 2 & 3: Interval kenaikan acak bertahap melambat (setiap 170ms)
+      this.timer = setInterval(function () {
+        if (self.isCompleted) return;
+
+        let inc = 0;
+        if (self.currentPercent < 35) {
+          // Fase awal: lompat acak cepat (+6% s.d. +13%)
+          inc = Math.floor(Math.random() * 8) + 6;
+        } else if (self.currentPercent < 68) {
+          // Fase tengah: lompat sedang (+3% s.d. +8%)
+          inc = Math.floor(Math.random() * 6) + 3;
+        } else if (self.currentPercent < 88) {
+          // Fase lanjutan: melambat (+1% s.d. +4%)
+          inc = Math.floor(Math.random() * 4) + 1;
+        } else if (self.currentPercent < 96) {
+          // Fase mendekati akhir: merayap pelan (+0.4% s.d. +1.1%)
+          inc = (Math.random() * 0.7) + 0.4;
+        } else {
+          // Tahan di ~96.5% sampai transaksi server benar-benar selesai
+          inc = 0;
+        }
+
+        const nextVal = Math.min(96.5, self.currentPercent + inc);
+        self.setPercent(nextVal);
+      }, 170);
+    },
+
+    setPercent: function (val) {
+      this.currentPercent = Math.max(0, Math.min(100, val));
+      const bar = document.getElementById('topProgressBar');
+      const text = document.getElementById('topProgressText');
+      const displayVal = Math.floor(this.currentPercent) + '%';
+
+      if (bar) bar.style.width = this.currentPercent + '%';
+      if (text) text.textContent = displayVal;
+    },
+
+    complete: function () {
+      if (this.activeRequests > 1) {
+        this.activeRequests--;
+        return;
+      }
+      this.activeRequests = 0;
+
+      if (this.timer) {
+        clearInterval(this.timer);
+        this.timer = null;
+      }
+      this.isCompleted = true;
+
+      // Fase 4: Melompat seketika ke 100%
+      this.setPercent(100);
+
+      const container = document.getElementById('topProgressBarContainer');
+      const bar = document.getElementById('topProgressBar');
+      const self = this;
+
+      // Pertahankan di 100% selama 260ms agar terlihat jelas oleh mata, lalu fade out
+      setTimeout(function () {
+        if (container) {
+          container.style.opacity = '0';
+        }
+        setTimeout(function () {
+          if (container && !self.activeRequests) {
+            container.classList.remove('is-active');
+            container.style.visibility = 'hidden';
+            if (bar) {
+              bar.style.transition = 'none';
+              bar.style.width = '0%';
+            }
+          }
+          self.currentPercent = 0;
+        }, 320);
+      }, 260);
+    }
+  };
+
+  function startTopProgress() {
+    if (typeof TOP_PROGRESS !== 'undefined' && TOP_PROGRESS.start) {
+      TOP_PROGRESS.start();
+    }
+  }
+
+  function completeTopProgress() {
+    if (typeof TOP_PROGRESS !== 'undefined' && TOP_PROGRESS.complete) {
+      TOP_PROGRESS.complete();
+    }
+  }
+
+
 // Data Percontohan Default (Sesuai Gambar Tabel Pengguna)
 const FALLBACK_SEED_DATA = [
   { no: 1, rowNumber: 2, npsn: '70003201', namaSekolah: 'UPTD SD NEGERI BUKRUR', jenjang: 'SD', kabSekolah: 'KABUPATEN ALOR', nia1: '12345', namaAsesor1: 'RUDI', kabAsesor1: 'ALOR', nia2: '43218', namaAsesor2: 'ANTON', kabAsesor2: 'SABU RAIJUA', status1: 'SELESAI', status2: 'SELESAI', statusKelompok: 'BELUM', tahap: 'Tahap 1' },
@@ -568,6 +705,7 @@ function handleGoogleCredentialResponse(response) {
   }
 
   showToast('Memverifikasi whitelist email: ' + email + '...', 'info', 3000);
+    startTopProgress();
 
   if (APP_STATE.isGoogleAppsScript) {
     google.script.run
@@ -581,11 +719,13 @@ function handleGoogleCredentialResponse(response) {
             errMsg.style.display = 'block';
           }
           showToast((res && res.message) ? res.message : 'Akses ditolak: Email belum terdaftar.', 'error', 6000);
+            completeTopProgress();
         }
       })
       .withFailureHandler(function (err) {
         if (errMsg) {
-          errMsg.textContent = 'Gagal menghubungi server database: ' + err.toString();
+          completeTopProgress();
+            errMsg.textContent = 'Gagal menghubungi server database: ' + err.toString();
           errMsg.style.display = 'block';
         }
         showToast('Gagal verifikasi server: ' + err.toString(), 'error', 5000);
@@ -626,6 +766,7 @@ function submitLogin(e) {
   if (btnSubmit) {
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = '<span>Memverifikasi akun...</span>';
+      startTopProgress();
   }
 
   if (APP_STATE.isGoogleAppsScript) {
@@ -640,7 +781,8 @@ function submitLogin(e) {
           loginSuccess(res.user, res.token);
         } else {
           if (errMsg) {
-            errMsg.textContent = (res && res.message) ? res.message : 'Username atau password tidak cocok.';
+            completeTopProgress();
+              errMsg.textContent = (res && res.message) ? res.message : 'Username atau password tidak cocok.';
             errMsg.style.display = 'block';
           }
         }
@@ -651,7 +793,8 @@ function submitLogin(e) {
           btnSubmit.innerHTML = '<span>Masuk ke Sistem</span><svg width="18" height="18" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
         }
         if (errMsg) {
-          errMsg.textContent = 'Gagal menghubungi server database: ' + err.toString();
+          completeTopProgress();
+            errMsg.textContent = 'Gagal menghubungi server database: ' + err.toString();
           errMsg.style.display = 'block';
         }
       })
@@ -1047,6 +1190,7 @@ function refreshData(isManual) {
   if (btn) btn.classList.add('spinning');
   if (mobileBtn) mobileBtn.classList.add('spinning');
   if (metricsGrid && isManual) metricsGrid.classList.add('is-refreshing');
+    startTopProgress();
 
   if (APP_STATE.isGoogleAppsScript) {
     google.script.run
@@ -1064,7 +1208,8 @@ function refreshData(isManual) {
         if (btn) btn.classList.remove('spinning');
         if (mobileBtn) mobileBtn.classList.remove('spinning');
         if (metricsGrid) metricsGrid.classList.remove('is-refreshing');
-        showToast('Error koneksi: ' + err.toString(), true);
+        completeTopProgress();
+          showToast('Error koneksi: ' + err.toString(), true);
       })
       .ambilSemuaData();
   } else {
@@ -1076,7 +1221,8 @@ function refreshData(isManual) {
       const savedData = localStorage.getItem('SIM_ASESOR_DATA');
       let items = savedData ? JSON.parse(savedData) : FALLBACK_SEED_DATA;
       const computed = computeStatsAndAsesorList(items);
-      applyLoadedData(items, computed.daftarAsesor, computed.stats);
+      completeTopProgress();
+        applyLoadedData(items, computed.daftarAsesor, computed.stats);
     }, 350);
   }
 }
