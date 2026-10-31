@@ -3841,70 +3841,145 @@
       text-wrap: balance;
     }
 
-    /* Google Sign-In & Login Divider (Model 2 Whitelist) */
+    /* Keyframes Animasi 3D & Efek Kilau Tombol Google (Standar ZettBOT v1.0.81) */
+    @keyframes googleBtnSheen {
+      0% {
+        left: -120%;
+        opacity: 0;
+      }
+      20% {
+        opacity: 0.75;
+      }
+      40% {
+        left: 140%;
+        opacity: 0;
+      }
+      100% {
+        left: 140%;
+        opacity: 0;
+      }
+    }
+
+    @keyframes googleAuraPulse {
+      0%, 100% {
+        filter: drop-shadow(0 3px 6px rgba(15, 23, 42, 0.07)) drop-shadow(0 1px 2px rgba(15, 23, 42, 0.04));
+      }
+      50% {
+        filter: drop-shadow(0 5px 14px rgba(66, 133, 244, 0.22)) drop-shadow(0 2px 4px rgba(15, 23, 42, 0.05));
+      }
+    }
+
+    /* Google Sign-In & Login Divider (Model 2 Whitelist - 3D & Animated v1.0.81) */
     .google-login-section {
-      margin-bottom: 1.15rem;
+      margin-bottom: 0.5rem;
       width: 100%;
       max-width: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
-      overflow: hidden;
+      justify-content: center;
+      overflow: visible;
       box-sizing: border-box;
     }
 
     .google-btn-container {
-      width: 100% !important;
-      max-width: 280px !important;
-      display: flex !important;
+      display: inline-flex !important;
       justify-content: center !important;
       align-items: center !important;
-      margin: 0 auto 0.25rem auto !important;
+      margin: 0 auto !important;
       min-height: 44px;
-      overflow: hidden !important;
+      position: relative;
+      border-radius: 6px;
       box-sizing: border-box !important;
+      overflow: visible !important;
+      cursor: pointer;
+      transform: translateZ(0);
+      animation: googleAuraPulse 3.8s ease-in-out infinite;
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), filter 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .google-btn-container:hover {
+      transform: translateY(-3px) scale(1.015);
+      animation: none;
+      filter: drop-shadow(0 10px 22px rgba(66, 133, 244, 0.28)) drop-shadow(0 3px 6px rgba(15, 23, 42, 0.08)) !important;
+    }
+
+    .google-btn-container:active {
+      transform: translateY(1.5px) scale(0.985);
+      filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.15)) !important;
     }
 
     .google-btn-container iframe {
-      max-width: 280px !important;
       margin: 0 auto !important;
       box-sizing: border-box !important;
-      border-radius: var(--radius-md) !important;
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      overflow: visible !important;
+      border-radius: 6px !important;
     }
 
+    /* Tombol Google Cadangan / Fallback (3D Bevel & Animasi Kilau) */
     .btn-google-sign-in {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 0.75rem;
       width: 100%;
+      max-width: 270px;
+      margin: 0 auto;
       padding: 0.72rem 1.15rem;
-      background: #ffffff;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
       color: #1f2937;
-      border: 1.5px solid #e2e8f0;
-      border-radius: var(--radius-md);
+      border: 1.5px solid #cbd5e1;
+      border-bottom: 3.5px solid #94a3b8;
+      border-radius: 8px;
       font-size: 0.885rem;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+      transform: translateZ(0);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-google-sign-in::after {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -120%;
+      width: 60%;
+      height: 200%;
+      background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.5) 50%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      transform: rotate(25deg);
+      pointer-events: none;
+      animation: googleBtnSheen 4.5s ease-in-out infinite;
     }
 
     .btn-google-sign-in:hover {
-      background: #f8fafc;
-      border-color: #cbd5e1;
-      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.09);
-      transform: translateY(-1px);
+      background: #ffffff;
+      border-color: #94a3b8;
+      border-bottom: 4px solid #4285F4;
+      transform: translateY(-2.5px);
+      box-shadow: 0 10px 24px rgba(66, 133, 244, 0.25), 0 3px 6px rgba(15, 23, 42, 0.06);
     }
 
     .btn-google-sign-in:active {
-      transform: translateY(0);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      transform: translateY(1.5px);
+      border-bottom: 1.5px solid #cbd5e1;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
     }
 
     .google-icon-svg {
       flex-shrink: 0;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12));
     }
 
     .login-divider {
@@ -4273,7 +4348,7 @@
         text-wrap: balance;
       }
 
-      /* Google Sign-In & Login Divider (Model 2 Whitelist - Standar ZettBOT v1.0.80) */
+      /* Google Sign-In & Login Divider (Mobile 3D & Animated v1.0.81) */
     .google-login-section {
       margin-bottom: 0.5rem;
       width: 100%;
@@ -4287,14 +4362,28 @@
     }
 
     .google-btn-container {
-      width: 100% !important;
-      display: flex !important;
+      display: inline-flex !important;
       justify-content: center !important;
       align-items: center !important;
       margin: 0 auto !important;
       min-height: 44px;
       overflow: visible !important;
       box-sizing: border-box !important;
+      cursor: pointer;
+      transform: translateZ(0);
+      animation: googleAuraPulse 3.8s ease-in-out infinite;
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), filter 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .google-btn-container:hover {
+      transform: translateY(-2.5px) scale(1.015);
+      animation: none;
+      filter: drop-shadow(0 8px 20px rgba(66, 133, 244, 0.28)) drop-shadow(0 2px 4px rgba(15, 23, 42, 0.08)) !important;
+    }
+
+    .google-btn-container:active {
+      transform: translateY(1.5px) scale(0.985);
+      filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.15)) !important;
     }
 
     .google-btn-container iframe {
@@ -4304,6 +4393,7 @@
       outline: none !important;
       box-shadow: none !important;
       overflow: visible !important;
+      border-radius: 6px !important;
     }
 
     .btn-google-sign-in {
@@ -4312,35 +4402,39 @@
       justify-content: center;
       gap: 0.65rem;
       width: 100%;
-      max-width: 260px;
+      max-width: 255px;
       margin: 0 auto;
       padding: 0.68rem 1rem;
-      background: #ffffff;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
       color: #1f2937;
-      border: 1.5px solid #e2e8f0;
-      border-radius: var(--radius-md);
+      border: 1.5px solid #cbd5e1;
+      border-bottom: 3.5px solid #94a3b8;
+      border-radius: 8px;
       font-size: 0.85rem;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 3px 8px rgba(15, 23, 42, 0.06);
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .btn-google-sign-in:hover {
-      background: #f8fafc;
-      border-color: #cbd5e1;
-      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.09);
-      transform: translateY(-1px);
+      border-bottom-color: #4285F4;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(66, 133, 244, 0.25);
     }
 
     .btn-google-sign-in:active {
-      transform: translateY(0);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      transform: translateY(1.5px);
+      border-bottom-width: 1.5px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
 
     .google-icon-svg {
       flex-shrink: 0;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12));
     }
 
     .login-divider {
