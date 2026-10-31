@@ -183,12 +183,24 @@ const APP_STATE = {
     currentPercent: 0,
     timer: null,
     watchdogTimer: null,
+    fadeTimer: null,
+    hideTimer: null,
     isCompleted: false,
     activeRequests: 0,
 
     start: function () {
       this.isCompleted = false;
       this.activeRequests = 1;
+
+      // Bersihkan pending fade/hide timer jika ada
+      if (this.fadeTimer) {
+        clearTimeout(this.fadeTimer);
+        this.fadeTimer = null;
+      }
+      if (this.hideTimer) {
+        clearTimeout(this.hideTimer);
+        this.hideTimer = null;
+      }
 
       const container = document.getElementById('topProgressBarContainer');
       const bar = document.getElementById('topProgressBar');
@@ -280,12 +292,15 @@ const APP_STATE = {
       const bar = document.getElementById('topProgressBar');
       const self = this;
 
+      if (this.fadeTimer) clearTimeout(this.fadeTimer);
+      if (this.hideTimer) clearTimeout(this.hideTimer);
+
       // Pertahankan di 100% selama 260ms agar terlihat jelas oleh mata, lalu fade out
-      setTimeout(function () {
+      this.fadeTimer = setTimeout(function () {
         if (container) {
           container.style.opacity = '0';
         }
-        setTimeout(function () {
+        self.hideTimer = setTimeout(function () {
           if (container) {
             container.classList.remove('is-active');
             container.style.visibility = 'hidden';
@@ -1201,9 +1216,11 @@ function refreshData(isManual) {
         if (mobileBtn) mobileBtn.classList.remove('spinning');
         if (metricsGrid) metricsGrid.classList.remove('is-refreshing');
         if (res && res.success) {
-          completeTopProgress();`r`n          applyLoadedData(res.data, res.daftarAsesor, res.stats);
+          completeTopProgress();
+          applyLoadedData(res.data, res.daftarAsesor, res.stats);
         } else {
-          completeTopProgress();`r`n          showToast('Gagal memuat data dari server', true);
+          completeTopProgress();
+          showToast('Gagal memuat data dari server', true);
         }
       })
       .withFailureHandler(function (err) {
