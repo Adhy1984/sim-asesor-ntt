@@ -176,23 +176,19 @@ const APP_STATE = {
 };
 
   // ============================================================================
-  // TOP SLIM SIMULATED PROGRESS CONTROLLER (STANDAR REKOMENDASI 1 v1.0.83)
-  // Algoritma Asimtotik Pseudo-Progress dengan Loncatan Acak & Auto-Snap 100%
+  // TOP SLIM SIMULATED PROGRESS CONTROLLER (STANDAR REKOMENDASI 1 v1.0.83 / v1.0.85)
+  // Algoritma Asimtotik Pseudo-Progress dengan Loncatan Acak, Watchdog & Auto-Snap 100%
   // ============================================================================
   const TOP_PROGRESS = {
     currentPercent: 0,
     timer: null,
+    watchdogTimer: null,
     isCompleted: false,
     activeRequests: 0,
 
     start: function () {
-      this.activeRequests++;
-      if (this.activeRequests > 1 && this.timer) {
-        return;
-      }
-
       this.isCompleted = false;
-      this.currentPercent = 0;
+      this.activeRequests = 1;
 
       const container = document.getElementById('topProgressBarContainer');
       const bar = document.getElementById('topProgressBar');
@@ -203,50 +199,55 @@ const APP_STATE = {
         container.style.opacity = '1';
         container.style.visibility = 'visible';
       }
-      if (bar) {
-        bar.style.transition = 'width 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
-        bar.style.width = '0%';
-      }
-      if (text) text.textContent = '0%';
 
-      if (this.timer) {
-        clearInterval(this.timer);
-        this.timer = null;
+      // Jika timer belum aktif, mulai animasi progress dari awal
+      if (!this.timer) {
+        this.currentPercent = 0;
+        if (bar) {
+          bar.style.transition = 'width 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+          bar.style.width = '0%';
+        }
+        if (text) text.textContent = '0%';
+
+        const self = this;
+        setTimeout(function () {
+          if (!self.isCompleted && self.currentPercent < 15) {
+            self.setPercent(Math.floor(Math.random() * 9) + 12);
+          }
+        }, 60);
+
+        this.timer = setInterval(function () {
+          if (self.isCompleted) return;
+
+          let inc = 0;
+          if (self.currentPercent < 35) {
+            inc = Math.floor(Math.random() * 8) + 6;
+          } else if (self.currentPercent < 68) {
+            inc = Math.floor(Math.random() * 6) + 3;
+          } else if (self.currentPercent < 88) {
+            inc = Math.floor(Math.random() * 4) + 1;
+          } else if (self.currentPercent < 96) {
+            inc = (Math.random() * 0.7) + 0.4;
+          } else {
+            inc = 0;
+          }
+
+          const nextVal = Math.min(96.5, self.currentPercent + inc);
+          self.setPercent(nextVal);
+        }, 170);
       }
 
-      // Fase 1: Umpan balik instan 60ms pertama (lompat ke 12% - 20%)
+      // Fail-Safe Safety Watchdog (Anti-Freeze 7.5s):
+      if (this.watchdogTimer) {
+        clearTimeout(this.watchdogTimer);
+        this.watchdogTimer = null;
+      }
       const self = this;
-      setTimeout(function () {
-        if (!self.isCompleted && self.currentPercent < 15) {
-          self.setPercent(Math.floor(Math.random() * 9) + 12);
+      this.watchdogTimer = setTimeout(function () {
+        if (!self.isCompleted && self.currentPercent >= 90) {
+          self.complete(true);
         }
-      }, 60);
-
-      // Fase 2 & 3: Interval kenaikan acak bertahap melambat (setiap 170ms)
-      this.timer = setInterval(function () {
-        if (self.isCompleted) return;
-
-        let inc = 0;
-        if (self.currentPercent < 35) {
-          // Fase awal: lompat acak cepat (+6% s.d. +13%)
-          inc = Math.floor(Math.random() * 8) + 6;
-        } else if (self.currentPercent < 68) {
-          // Fase tengah: lompat sedang (+3% s.d. +8%)
-          inc = Math.floor(Math.random() * 6) + 3;
-        } else if (self.currentPercent < 88) {
-          // Fase lanjutan: melambat (+1% s.d. +4%)
-          inc = Math.floor(Math.random() * 4) + 1;
-        } else if (self.currentPercent < 96) {
-          // Fase mendekati akhir: merayap pelan (+0.4% s.d. +1.1%)
-          inc = (Math.random() * 0.7) + 0.4;
-        } else {
-          // Tahan di ~96.5% sampai transaksi server benar-benar selesai
-          inc = 0;
-        }
-
-        const nextVal = Math.min(96.5, self.currentPercent + inc);
-        self.setPercent(nextVal);
-      }, 170);
+      }, 7500);
     },
 
     setPercent: function (val) {
@@ -259,16 +260,16 @@ const APP_STATE = {
       if (text) text.textContent = displayVal;
     },
 
-    complete: function () {
-      if (this.activeRequests > 1) {
-        this.activeRequests--;
-        return;
-      }
+    complete: function (force) {
       this.activeRequests = 0;
 
       if (this.timer) {
         clearInterval(this.timer);
         this.timer = null;
+      }
+      if (this.watchdogTimer) {
+        clearTimeout(this.watchdogTimer);
+        this.watchdogTimer = null;
       }
       this.isCompleted = true;
 
@@ -285,7 +286,7 @@ const APP_STATE = {
           container.style.opacity = '0';
         }
         setTimeout(function () {
-          if (container && !self.activeRequests) {
+          if (container) {
             container.classList.remove('is-active');
             container.style.visibility = 'hidden';
             if (bar) {
@@ -294,6 +295,7 @@ const APP_STATE = {
             }
           }
           self.currentPercent = 0;
+          self.isCompleted = false;
         }, 320);
       }, 260);
     }
@@ -305,9 +307,9 @@ const APP_STATE = {
     }
   }
 
-  function completeTopProgress() {
+  function completeTopProgress(force) {
     if (typeof TOP_PROGRESS !== 'undefined' && TOP_PROGRESS.complete) {
-      TOP_PROGRESS.complete();
+      TOP_PROGRESS.complete(force);
     }
   }
 
@@ -1199,9 +1201,9 @@ function refreshData(isManual) {
         if (mobileBtn) mobileBtn.classList.remove('spinning');
         if (metricsGrid) metricsGrid.classList.remove('is-refreshing');
         if (res && res.success) {
-          applyLoadedData(res.data, res.daftarAsesor, res.stats);
+          completeTopProgress();`r`n          applyLoadedData(res.data, res.daftarAsesor, res.stats);
         } else {
-          showToast('Gagal memuat data dari server', true);
+          completeTopProgress();`r`n          showToast('Gagal memuat data dari server', true);
         }
       })
       .withFailureHandler(function (err) {
