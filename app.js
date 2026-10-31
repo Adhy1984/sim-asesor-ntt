@@ -133,6 +133,9 @@ function getClientDeviceInfo() {
   ApiRunner.prototype.tambahPengguna = function (userData, currentUser) {
     this._callApi('tambahPengguna', { userData: userData, currentUser: currentUser });
   };
+  ApiRunner.prototype.updatePengguna = function (userData, currentUser) {
+    this._callApi('updatePengguna', { userData: userData, currentUser: currentUser });
+  };
   ApiRunner.prototype.ubahPasswordPengguna = function (targetUsername, newPassword, currentUser) {
     this._callApi('ubahPasswordPengguna', { targetUsername: targetUsername, newPassword: newPassword, currentUser: currentUser });
   };
@@ -3524,7 +3527,11 @@ function renderUserTable(users) {
       '<td style="padding: 8px 10px; text-align: center; white-space: nowrap;">' + formatDeviceBadge(u.perangkat, isCurrent) + '</td>' +
       '<td style="padding: 8px 10px; text-align: center; white-space: nowrap;">' +
       '<div style="display: inline-flex; align-items: center; gap: 4px;">' +
-      '<a href="#change-password" class="btn-secondary" onclick="openChangePasswordModal(\'' + escapeHtmlAttr(uName) + '\', \'' + escapeHtmlAttr(u.nama || uName) + '\'); if(event) event.preventDefault();" role="button" title="Ubah / Buat Kata Sandi" style="font-size: 0.7rem; padding: 4px 8px; display: inline-flex; align-items: center; gap: 3px; border-radius: 4px; text-decoration: none; color: inherit; cursor: pointer;">' +
+      '<a href="#edit-user" class="btn-secondary" onclick="openEditUserModal(\'' + escapeHtmlAttr(uName) + '\', \'' + escapeHtmlAttr(u.nama || '') + '\', \'' + escapeHtmlAttr(u.role || 'User') + '\', \'' + escapeHtmlAttr(u.status || 'Aktif') + '\'); if(event) event.preventDefault();" role="button" title="Edit Akun Pengguna" style="font-size: 0.7rem; padding: 4px 8px; display: inline-flex; align-items: center; gap: 3px; border-radius: 4px; text-decoration: none; color: #1e40af; border-color: #bfdbfe; background: #eff6ff; cursor: pointer;">' +
+        '<svg viewBox="0 0 24 24" style="width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+        '<span>Edit</span>' +
+        '</a>' +
+        '<a href="#change-password" class="btn-secondary" onclick="openChangePasswordModal(\'' + escapeHtmlAttr(uName) + '\', \'' + escapeHtmlAttr(u.nama || uName) + '\'); if(event) event.preventDefault();" role="button" title="Ubah / Buat Kata Sandi" style="font-size: 0.7rem; padding: 4px 8px; display: inline-flex; align-items: center; gap: 3px; border-radius: 4px; text-decoration: none; color: inherit; cursor: pointer;">' +
       '<svg viewBox="0 0 24 24" style="width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
       '<span>Password</span>' +
       '</a>' +
@@ -3656,6 +3663,140 @@ function submitAddUser() {
       showToast('Simulasi Berhasil: Pengguna "' + username + '" ditambahkan.');
       toggleAddUserForm(false);
       fetchUserList(false);
+    }, 350);
+  }
+}
+
+function openEditUserModal(username, nama, role, status) {
+  const targetUserInp = document.getElementById('editUsername');
+  const dispUser = document.getElementById('editDisplayUsername');
+  const namaInp = document.getElementById('editNamaLengkap');
+  const roleInp = document.getElementById('editRole');
+  const statusInp = document.getElementById('editStatus');
+  const roleHelp = document.getElementById('editRoleHelp');
+  const statusHelp = document.getElementById('editStatusHelp');
+
+  const uName = String(username || '').trim();
+  const isPrimaryAdmin = (uName.toLowerCase() === 'admin');
+
+  if (targetUserInp) targetUserInp.value = uName;
+  if (dispUser) dispUser.textContent = '@' + uName;
+  if (namaInp) {
+    namaInp.value = nama || '';
+    setTimeout(function () { namaInp.focus(); }, 100);
+  }
+  if (roleInp) {
+    roleInp.value = (String(role).toLowerCase() === 'admin') ? 'Admin' : 'User';
+    roleInp.disabled = isPrimaryAdmin;
+  }
+  if (statusInp) {
+    statusInp.value = (String(status).toLowerCase() === 'nonaktif') ? 'Nonaktif' : 'Aktif';
+    statusInp.disabled = isPrimaryAdmin;
+  }
+  if (roleHelp) {
+    roleHelp.textContent = isPrimaryAdmin ? 'Role akun utama admin terkunci' : 'Hak akses sistem';
+    roleHelp.style.color = isPrimaryAdmin ? '#ea580c' : '#64748b';
+  }
+  if (statusHelp) {
+    statusHelp.textContent = isPrimaryAdmin ? 'Status akun utama admin terkunci' : 'Izin akses login';
+    statusHelp.style.color = isPrimaryAdmin ? '#ea580c' : '#64748b';
+  }
+
+  const modal = document.getElementById('modalEditUser');
+  if (modal) modal.classList.add('active');
+}
+
+function closeEditUserModal(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  const modal = document.getElementById('modalEditUser');
+  if (modal) modal.classList.remove('active');
+}
+
+function submitEditUser() {
+  const targetUserInp = document.getElementById('editUsername');
+  const namaInp = document.getElementById('editNamaLengkap');
+  const roleInp = document.getElementById('editRole');
+  const statusInp = document.getElementById('editStatus');
+  const btnSubmit = document.getElementById('btnSubmitEditUser');
+
+  const username = (targetUserInp ? targetUserInp.value : '').trim().toLowerCase();
+  const nama = (namaInp ? namaInp.value : '').trim();
+  const role = (roleInp ? roleInp.value : 'User');
+  const status = (statusInp ? statusInp.value : 'Aktif');
+
+  if (!username || !nama) {
+    showToast('Nama lengkap wajib diisi.');
+    return;
+  }
+
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<span>Menyimpan...</span>';
+  }
+
+  const userData = {
+    username: username,
+    nama: nama,
+    role: role,
+    status: status
+  };
+
+  if (APP_STATE.isGoogleAppsScript) {
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = '<span>Simpan Perubahan</span>';
+        }
+        if (res && res.success) {
+          showToast(res.message || 'Data pengguna berhasil diperbarui.');
+          closeEditUserModal();
+          fetchUserList(false);
+        } else {
+          showToast('Gagal: ' + ((res && res.message) || 'Terjadi kesalahan sistem.'));
+        }
+      })
+      .withFailureHandler(function (err) {
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = '<span>Simpan Perubahan</span>';
+        }
+        showToast('Kesalahan server: ' + (err.message || err.toString()));
+      })
+      .updatePengguna(userData, APP_STATE.currentUser);
+  } else {
+    // Standalone simulation
+    setTimeout(function () {
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<span>Simpan Perubahan</span>';
+      }
+      let localUsers = [];
+      const stored = localStorage.getItem('SIM_USER_LIST');
+      if (stored) {
+        try { localUsers = JSON.parse(stored); } catch (e) { localUsers = []; }
+      }
+      let found = false;
+      for (let i = 0; i < localUsers.length; i++) {
+        if (String(localUsers[i].username).toLowerCase() === username) {
+          localUsers[i].nama = nama;
+          if (username !== 'admin') {
+            localUsers[i].role = role;
+            localUsers[i].status = status;
+          }
+          found = true;
+          break;
+        }
+      }
+      if (found) {
+        localStorage.setItem('SIM_USER_LIST', JSON.stringify(localUsers));
+        USER_MANAGEMENT_STATE.users = localUsers;
+        renderUserTable(localUsers);
+        showToast('Data pengguna "' + username + '" berhasil diperbarui.');
+        closeEditUserModal();
+      } else {
+        showToast('Pengguna tidak ditemukan.');
+      }
     }, 350);
   }
 }

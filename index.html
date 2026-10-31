@@ -1383,6 +1383,79 @@
     </div>
   </div>
 
+    <!-- ==========================================================================
+       MODAL EDIT DATA PENGGUNA (MINI MODAL) - v1.0.82
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalEditUser" style="z-index: 1060;">
+    <div class="modal-window" style="max-width: 440px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+          <div class="modal-icon-badge" style="background: rgba(37, 99, 235, 0.12); color: #2563eb;">
+            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 1rem;">Edit Akun Pengguna</h3>
+            <span style="font-size: 0.725rem; color: #64748b;">Perbarui profil dan wewenang akun pengguna</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeEditUserModal()">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.25rem 1.5rem;">
+        <form id="formEditUser" onsubmit="event.preventDefault(); submitEditUser();">
+          <input type="hidden" id="editUsername">
+          <div style="margin-bottom: 1rem; padding: 0.75rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.8rem;">
+            <div style="color: #64748b; font-size: 0.725rem;">Target Pengguna:</div>
+            <div style="font-weight: 700; color: #0f172a; margin-top: 2px;">
+              <span id="editDisplayUsername" style="color: #2563eb;">@user</span>
+              <span style="font-size: 0.68rem; color: #94a3b8; font-weight: normal; margin-left: 6px;">(Username unik)</span>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 1rem;">
+            <label for="editNamaLengkap" style="display: block; font-size: 0.78rem; font-weight: 600; color: #334155; margin-bottom: 6px;">
+              Nama Lengkap <span style="color: #ef4444;">*</span>
+            </label>
+            <div style="position: relative;">
+              <input type="text" id="editNamaLengkap" required placeholder="Masukkan nama lengkap..." style="width: 100%; padding: 8px 12px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; background: #ffffff;">
+            </div>
+            <span style="display: block; font-size: 0.7rem; color: #64748b; margin-top: 4px;">Nama atau gelar lengkap pengguna</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem;">
+            <div>
+              <label for="editRole" style="display: block; font-size: 0.78rem; font-weight: 600; color: #334155; margin-bottom: 6px;">
+                Peran (Role)
+              </label>
+              <select id="editRole" style="width: 100%; padding: 8px 10px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; background: #ffffff; cursor: pointer;">
+                <option value="User">User (Asesor)</option>
+                <option value="Admin">Admin (Administrator)</option>
+              </select>
+              <span id="editRoleHelp" style="display: block; font-size: 0.68rem; color: #64748b; margin-top: 4px;">Hak akses sistem</span>
+            </div>
+            <div>
+              <label for="editStatus" style="display: block; font-size: 0.78rem; font-weight: 600; color: #334155; margin-bottom: 6px;">
+                Status Akun
+              </label>
+              <select id="editStatus" style="width: 100%; padding: 8px 10px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; background: #ffffff; cursor: pointer;">
+                <option value="Aktif">Aktif</option>
+                <option value="Nonaktif">Nonaktif</option>
+              </select>
+              <span id="editStatusHelp" style="display: block; font-size: 0.68rem; color: #64748b; margin-top: 4px;">Izin akses login</span>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem;">
+            <button type="button" class="btn-secondary" onclick="closeEditUserModal()">Batal</button>
+            <button type="submit" class="btn-primary" id="btnSubmitEditUser" style="background: #2563eb; border-color: #2563eb;">
+              <span>Simpan Perubahan</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- ==========================================================================
        MODAL DATABASE ASESOR (SHEET DBASESOR) - v1.0.65
        ========================================================================== -->
