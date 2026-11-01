@@ -1096,19 +1096,25 @@ function initSessionIdleManager() {
 }
 
   // ============================================================================
-  // MODUL PROTEKSI ANTI-INSPECT & UX HARDENING (v1.0.89)
-  // Mencegah View Page Source & DevTools Shortcuts serta Klik Kanan Non-Form
+  // MODUL PROTEKSI ANTI-INSPECT & UX HARDENING (v1.0.90)
+  // Mencegah View Page Source & DevTools Shortcuts serta Proteksi Klik Kanan Cerdas
+  // (Mengizinkan Form Input untuk Copy/Paste dan Tautan a[href] untuk "Open link in new tab")
   // ============================================================================
   function initAntiInspectProtection() {
-    // 1. Cegah Klik Kanan (Context Menu) kecuali pada elemen isian formulir (input / textarea)
+    // 1. Cegah Klik Kanan (Context Menu) kecuali pada elemen isian formulir & tautan navigasi
     document.addEventListener('contextmenu', function (e) {
       const target = e.target;
       const tag = (target && target.tagName) ? target.tagName.toUpperCase() : '';
       const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || (target && target.isContentEditable);
-      if (!isEditable) {
-        e.preventDefault();
-        return false;
+      const isLink = target && target.closest && target.closest('a[href]');
+
+      // Izinkan klik kanan pada kolom form (untuk Salin/Tempel) dan tautan link (untuk "Open link in new tab")
+      if (isEditable || isLink) {
+        return true;
       }
+
+      e.preventDefault();
+      return false;
     }, { passive: false });
 
     // 2. Cegah Pintasan Keyboard Pengembang (View Source & DevTools Shortcuts)
@@ -1141,12 +1147,13 @@ function initSessionIdleManager() {
         return false;
       }
 
-      // Tombol Menu Konteks Fisik atau Shift+F10 (kecuali di elemen input)
+      // Tombol Menu Konteks Fisik atau Shift+F10 (kecuali di elemen input & link)
       if (e.key === 'ContextMenu' || (e.shiftKey && (e.key === 'F10' || code === 121))) {
         const target = e.target;
         const tag = (target && target.tagName) ? target.tagName.toUpperCase() : '';
         const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || (target && target.isContentEditable);
-        if (!isEditable) {
+        const isLink = target && target.closest && target.closest('a[href]');
+        if (!isEditable && !isLink) {
           e.preventDefault();
           return false;
         }
