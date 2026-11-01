@@ -1095,8 +1095,68 @@ function initSessionIdleManager() {
   });
 }
 
-// Inisialisasi saat Halaman Dimuat
+  // ============================================================================
+  // MODUL PROTEKSI ANTI-INSPECT & UX HARDENING (v1.0.89)
+  // Mencegah View Page Source & DevTools Shortcuts serta Klik Kanan Non-Form
+  // ============================================================================
+  function initAntiInspectProtection() {
+    // 1. Cegah Klik Kanan (Context Menu) kecuali pada elemen isian formulir (input / textarea)
+    document.addEventListener('contextmenu', function (e) {
+      const target = e.target;
+      const tag = (target && target.tagName) ? target.tagName.toUpperCase() : '';
+      const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || (target && target.isContentEditable);
+      if (!isEditable) {
+        e.preventDefault();
+        return false;
+      }
+    }, { passive: false });
+
+    // 2. Cegah Pintasan Keyboard Pengembang (View Source & DevTools Shortcuts)
+    document.addEventListener('keydown', function (e) {
+      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+      const key = (e.key || '').toUpperCase();
+      const code = e.keyCode || e.which;
+
+      // F12 (Developer Tools)
+      if (e.key === 'F12' || code === 123) {
+        e.preventDefault();
+        return false;
+      }
+
+      // Ctrl+U / Cmd+U (View Page Source)
+      if (isCtrlOrMeta && (key === 'U' || code === 85)) {
+        e.preventDefault();
+        return false;
+      }
+
+      // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (Inspect Element, Console, Inspector)
+      if (isCtrlOrMeta && e.shiftKey && (key === 'I' || key === 'J' || key === 'C' || code === 73 || code === 74 || code === 67)) {
+        e.preventDefault();
+        return false;
+      }
+
+      // Ctrl+S / Cmd+S (Save Page HTML)
+      if (isCtrlOrMeta && (key === 'S' || code === 83)) {
+        e.preventDefault();
+        return false;
+      }
+
+      // Tombol Menu Konteks Fisik atau Shift+F10 (kecuali di elemen input)
+      if (e.key === 'ContextMenu' || (e.shiftKey && (e.key === 'F10' || code === 121))) {
+        const target = e.target;
+        const tag = (target && target.tagName) ? target.tagName.toUpperCase() : '';
+        const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || (target && target.isContentEditable);
+        if (!isEditable) {
+          e.preventDefault();
+          return false;
+        }
+      }
+    }, { passive: false });
+  }
+
+  // Inisialisasi saat Halaman Dimuat
 document.addEventListener('DOMContentLoaded', function () {
+    initAntiInspectProtection();
   initAppDate();
   initMobileDrawerLogo();
   initOpenInNewTabOnButtons();
