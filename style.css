@@ -1,4 +1,4 @@
-    /* ==========================================================================
+﻿    /* ==========================================================================
        DESIGN SYSTEM & CSS TOKENS (Human-Crafted Anti-AI Aesthetic)
        ========================================================================== */
     :root {
@@ -2530,7 +2530,10 @@
     }
 
     .sig-space {
-      height: 65px;
+      height: 88px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .sig-name {
