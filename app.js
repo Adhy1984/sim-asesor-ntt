@@ -634,9 +634,7 @@ function initGoogleSignIn(forceClean) {
 
   if (isPlaceholder) {
     // Tampilkan tombol placeholder dengan indikator siap pakai
-    const gWrapper = document.getElementById('googleBtnWrapper');
-    if (gWrapper) gWrapper.style.display = 'none';
-    else if (gContainer) gContainer.style.display = 'none';
+    if (gContainer) gContainer.style.display = 'none';
     if (placeholderBtn) placeholderBtn.style.display = 'flex';
     return;
   }
@@ -658,8 +656,6 @@ function initGoogleSignIn(forceClean) {
       });
 
       if (placeholderBtn) placeholderBtn.style.display = 'none';
-      const gWrapper = document.getElementById('googleBtnWrapper');
-      if (gWrapper) gWrapper.style.display = 'inline-flex';
       if (gContainer) {
         gContainer.style.display = 'flex';
         gContainer.innerHTML = '';
@@ -1176,89 +1172,9 @@ function initSessionIdleManager() {
     }, { passive: false });
   }
 
-  /**
-   * Inisialisasi Perisai Pelindung Tombol Google (Anti-Right Click & Anti-Inspect Guard v1.0.93)
-   */
-  function initGoogleShield() {
-    const shield = document.getElementById('googleBtnShield');
-    const gContainer = document.getElementById('googleBtnContainer');
-    if (!shield) return;
-
-    // 1. Blokir mutlak event klik kanan (contextmenu) dan tombol tengah (auxclick)
-    ['contextmenu', 'auxclick'].forEach(function (evtName) {
-      shield.addEventListener(evtName, function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      }, { passive: false });
-    });
-
-    // 2. Blokir pointerdown jika bukan tombol kiri primer (e.button !== 0)
-    shield.addEventListener('pointerdown', function (e) {
-      if (e.button !== 0) {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-      }
-    }, { passive: false });
-
-    // 3. Handle klik kiri primer (e.button === 0)
-    shield.addEventListener('click', function (e) {
-      if (e.button !== 0) {
-        e.preventDefault();
-        return;
-      }
-
-      const isPlaceholder = !GOOGLE_OAUTH_CLIENT_ID ||
-        GOOGLE_OAUTH_CLIENT_ID.indexOf('YOUR_GOOGLE_CLIENT_ID_HERE') !== -1 ||
-        GOOGLE_OAUTH_CLIENT_ID.trim() === '';
-
-      if (isPlaceholder) {
-        handleGooglePlaceholderClick();
-        return;
-      }
-
-      let triggered = false;
-      // Trigger elemen role="button" yang dibuat oleh library Google di dalam container
-      const gRoleBtn = document.querySelector('#googleBtnContainer div[role="button"]');
-      if (gRoleBtn && typeof gRoleBtn.click === 'function') {
-        try {
-          gRoleBtn.click();
-          triggered = true;
-        } catch (err) { }
-      }
-
-      // Panggil prompt resmi Google (One Tap / FedCM)
-      if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
-        try {
-          google.accounts.id.prompt();
-          triggered = true;
-        } catch (err) { }
-      }
-
-      if (!triggered) {
-        handleGooglePlaceholderClick();
-      }
-    });
-
-    // 4. Pasang observer untuk iframe Google agar attribute oncontextmenu="return false;" terpasang langsung
-    if (gContainer && window.MutationObserver) {
-      const observer = new MutationObserver(function () {
-        const iframes = gContainer.querySelectorAll('iframe');
-        iframes.forEach(function (ifr) {
-          try {
-            ifr.setAttribute('oncontextmenu', 'return false;');
-          } catch (e) { }
-        });
-      });
-      observer.observe(gContainer, { childList: true, subtree: true });
-    }
-  }
-
   // Inisialisasi saat Halaman Dimuat
 document.addEventListener('DOMContentLoaded', function () {
     initAntiInspectProtection();
-    initGoogleShield();
   initAppDate();
   initMobileDrawerLogo();
   initOpenInNewTabOnButtons();
