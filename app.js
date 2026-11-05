@@ -634,7 +634,9 @@ function initGoogleSignIn(forceClean) {
 
   if (isPlaceholder) {
     // Tampilkan tombol placeholder dengan indikator siap pakai
-    if (gContainer) gContainer.style.display = 'none';
+    const gWrapper = document.getElementById('googleBtnWrapper');
+    if (gWrapper) gWrapper.style.display = 'none';
+    else if (gContainer) gContainer.style.display = 'none';
     if (placeholderBtn) placeholderBtn.style.display = 'flex';
     return;
   }
@@ -656,6 +658,8 @@ function initGoogleSignIn(forceClean) {
       });
 
       if (placeholderBtn) placeholderBtn.style.display = 'none';
+      const gWrapper = document.getElementById('googleBtnWrapper');
+      if (gWrapper) gWrapper.style.display = 'inline-flex';
       if (gContainer) {
         gContainer.style.display = 'flex';
         gContainer.innerHTML = '';
@@ -1096,26 +1100,37 @@ function initSessionIdleManager() {
 }
 
   // ============================================================================
-  // MODUL PROTEKSI ANTI-INSPECT & UX HARDENING (v1.0.90)
+  // MODUL PROTEKSI ANTI-INSPECT & UX HARDENING (v1.0.93)
   // Mencegah View Page Source & DevTools Shortcuts serta Proteksi Klik Kanan Cerdas
   // (Mengizinkan Form Input untuk Copy/Paste dan Tautan a[href] untuk "Open link in new tab")
   // ============================================================================
   function initAntiInspectProtection() {
-    // 1. Cegah Klik Kanan (Context Menu) kecuali pada elemen isian formulir & tautan navigasi
-    document.addEventListener('contextmenu', function (e) {
+    // 1. Cegah Klik Kanan (Context Menu) di seluruh dokumen dengan fase capture (useCapture = true)
+    window.addEventListener('contextmenu', function (e) {
       const target = e.target;
       const tag = (target && target.tagName) ? target.tagName.toUpperCase() : '';
       const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || (target && target.isContentEditable);
       const isLink = target && target.closest && target.closest('a[href]');
 
-      // Izinkan klik kanan pada kolom form (untuk Salin/Tempel) dan tautan link (untuk "Open link in new tab")
+      // Di dalam kartu login, blokir semua tombol & perisai, hanya izinkan isian teks formulir (Salin/Tempel)
+      if (target && target.closest && target.closest('.login-card')) {
+        if (!isEditable) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+        return true;
+      }
+
+      // Di luar kartu login, izinkan klik kanan pada isian form dan tautan navigasi ("Open link in new tab")
       if (isEditable || isLink) {
         return true;
       }
 
       e.preventDefault();
+      e.stopPropagation();
       return false;
-    }, { passive: false });
+    }, true);
 
     // 2. Cegah Pintasan Keyboard Pengembang (View Source & DevTools Shortcuts)
     document.addEventListener('keydown', function (e) {
@@ -1161,9 +1176,89 @@ function initSessionIdleManager() {
     }, { passive: false });
   }
 
+  /**
+   * Inisialisasi Perisai Pelindung Tombol Google (Anti-Right Click & Anti-Inspect Guard v1.0.93)
+   */
+  function initGoogleShield() {
+    const shield = document.getElementById('googleBtnShield');
+    const gContainer = document.getElementById('googleBtnContainer');
+    if (!shield) return;
+
+    // 1. Blokir mutlak event klik kanan (contextmenu) dan tombol tengah (auxclick)
+    ['contextmenu', 'auxclick'].forEach(function (evtName) {
+      shield.addEventListener(evtName, function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }, { passive: false });
+    });
+
+    // 2. Blokir pointerdown jika bukan tombol kiri primer (e.button !== 0)
+    shield.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    }, { passive: false });
+
+    // 3. Handle klik kiri primer (e.button === 0)
+    shield.addEventListener('click', function (e) {
+      if (e.button !== 0) {
+        e.preventDefault();
+        return;
+      }
+
+      const isPlaceholder = !GOOGLE_OAUTH_CLIENT_ID ||
+        GOOGLE_OAUTH_CLIENT_ID.indexOf('YOUR_GOOGLE_CLIENT_ID_HERE') !== -1 ||
+        GOOGLE_OAUTH_CLIENT_ID.trim() === '';
+
+      if (isPlaceholder) {
+        handleGooglePlaceholderClick();
+        return;
+      }
+
+      let triggered = false;
+      // Trigger elemen role="button" yang dibuat oleh library Google di dalam container
+      const gRoleBtn = document.querySelector('#googleBtnContainer div[role="button"]');
+      if (gRoleBtn && typeof gRoleBtn.click === 'function') {
+        try {
+          gRoleBtn.click();
+          triggered = true;
+        } catch (err) { }
+      }
+
+      // Panggil prompt resmi Google (One Tap / FedCM)
+      if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+        try {
+          google.accounts.id.prompt();
+          triggered = true;
+        } catch (err) { }
+      }
+
+      if (!triggered) {
+        handleGooglePlaceholderClick();
+      }
+    });
+
+    // 4. Pasang observer untuk iframe Google agar attribute oncontextmenu="return false;" terpasang langsung
+    if (gContainer && window.MutationObserver) {
+      const observer = new MutationObserver(function () {
+        const iframes = gContainer.querySelectorAll('iframe');
+        iframes.forEach(function (ifr) {
+          try {
+            ifr.setAttribute('oncontextmenu', 'return false;');
+          } catch (e) { }
+        });
+      });
+      observer.observe(gContainer, { childList: true, subtree: true });
+    }
+  }
+
   // Inisialisasi saat Halaman Dimuat
 document.addEventListener('DOMContentLoaded', function () {
     initAntiInspectProtection();
+    initGoogleShield();
   initAppDate();
   initMobileDrawerLogo();
   initOpenInNewTabOnButtons();
