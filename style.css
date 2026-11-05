@@ -3816,12 +3816,12 @@
       background: #ffffff;
       border-radius: 20px;
       box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.12), 0 8px 24px -4px rgba(15, 23, 42, 0.25);
-      max-width: 400px;
+      max-width: 380px;
       width: 100%;
       margin: auto !important;
       margin-left: auto !important;
       margin-right: auto !important;
-      padding: 2.25rem 2rem;
+      padding: 1.45rem 1.85rem;
       text-align: center;
       animation: loginCardSmoothEntrance 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       border: 1px solid rgba(226, 232, 240, 0.85);
@@ -3851,19 +3851,19 @@
 
     .login-brand-icon {
       position: relative;
-      width: 82px;
-      height: 82px;
+      width: 72px;
+      height: 72px;
       background: linear-gradient(155deg, #ffffff 0%, #f8fafc 55%, #edf2f7 100%);
-      border-radius: 18px;
+      border-radius: 17px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 1.05rem auto;
+      margin: 0 auto 0.65rem auto;
       border: 2px solid #ffffff;
       border-bottom: 4px solid #cbd5e1;
       outline: 1px solid rgba(203, 213, 225, 0.7);
       box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.05), 0 0 24px -2px rgba(37, 99, 235, 0.18);
-      padding: 8px 12px;
+      padding: 7px 10px;
       box-sizing: border-box;
       overflow: hidden;
       isolation: isolate;
@@ -3933,24 +3933,24 @@
 
     .login-title {
       font-family: var(--font-heading);
-      font-size: 1.45rem;
+      font-size: 1.32rem;
       font-weight: 800;
       color: #0f172a;
       letter-spacing: 0.02em;
       line-height: 1.25;
-      margin: 0 auto 0.35rem auto;
+      margin: 0 auto 0.2rem auto;
       text-align: center;
       width: 100%;
     }
 
     .login-subtitle {
-      font-size: 0.8rem;
+      font-size: 0.775rem;
       color: #64748b;
-      margin: 0 auto 1.4rem auto;
+      margin: 0 auto 0.85rem auto;
       text-align: center;
       width: 100%;
       max-width: 285px;
-      line-height: 1.45;
+      line-height: 1.35;
       text-wrap: balance;
     }
 
@@ -3984,7 +3984,7 @@
 
     /* Google Sign-In & Login Divider (Model 2 Whitelist - 3D & Animated v1.0.81) */
     .google-login-section {
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.15rem;
       width: 100%;
       max-width: 100%;
       display: flex;
@@ -4099,9 +4099,9 @@
       display: flex;
       align-items: center;
       width: 100%;
-      margin: 1.15rem 0 0.35rem 0;
+      margin: 0.75rem 0 0.35rem 0;
       color: #94a3b8;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       font-weight: 600;
@@ -4120,16 +4120,16 @@
     }
 
     .login-field-group {
-      margin-bottom: 1.15rem;
+      margin-bottom: 0.85rem;
       text-align: left;
     }
 
     .login-field-group label {
       display: block;
-      font-size: 0.775rem;
+      font-size: 0.75rem;
       font-weight: 600;
       color: #334155;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.28rem;
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
@@ -4155,9 +4155,9 @@
 
     .login-input {
       width: 100%;
-      padding: 0.7rem 0.85rem 0.7rem 2.5rem;
+      padding: 0.62rem 0.85rem 0.62rem 2.45rem;
       font-family: var(--font-body);
-      font-size: 0.925rem;
+      font-size: 0.885rem;
       border: 1.5px solid #cbd5e1;
       border-radius: var(--radius-md);
       background: #f8fafc;
@@ -4228,9 +4228,9 @@
       background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
       color: #ffffff;
       border: none;
-      padding: 0.78rem 1.25rem;
+      padding: 0.68rem 1.15rem;
       font-family: var(--font-body);
-      font-size: 0.925rem;
+      font-size: 0.9rem;
       font-weight: 600;
       border-radius: var(--radius-md);
       cursor: pointer;
@@ -4240,7 +4240,7 @@
       gap: 0.5rem;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
-      margin-top: 0.35rem;
+      margin-top: 0.2rem;
       box-sizing: border-box;
     }
 
@@ -4341,6 +4341,53 @@
     .footer-subtext {
       font-size: 0.775rem;
       color: var(--text-light);
+    }
+
+    /* Responsif Layar Laptop Pendek / Kompak (Standar ZettBOT v1.0.92) */
+    @media (max-height: 720px) {
+      .login-overlay {
+        padding: 0.65rem;
+      }
+      .login-card {
+        padding: 1.15rem 1.65rem;
+        max-width: 360px;
+      }
+      .login-brand-icon {
+        width: 62px;
+        height: 62px;
+        margin-bottom: 0.45rem;
+        border-radius: 15px;
+      }
+      .login-title {
+        font-size: 1.2rem;
+        margin-bottom: 0.15rem;
+      }
+      .login-subtitle {
+        font-size: 0.725rem;
+        margin-bottom: 0.65rem;
+      }
+      .login-field-group {
+        margin-bottom: 0.65rem;
+      }
+      .login-field-group label {
+        font-size: 0.7rem;
+        margin-bottom: 0.2rem;
+      }
+      .login-input {
+        padding: 0.52rem 0.75rem 0.52rem 2.25rem;
+        font-size: 0.85rem;
+      }
+      .btn-login-submit {
+        padding: 0.58rem 1rem;
+        font-size: 0.85rem;
+      }
+      .login-divider {
+        margin: 0.55rem 0 0.25rem 0;
+        font-size: 0.68rem;
+      }
+      .google-btn-container {
+        min-height: 38px;
+      }
     }
 
     /* ==========================================================================
