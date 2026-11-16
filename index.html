@@ -56,8 +56,13 @@
     (function() {
       try {
         var rawRole = localStorage.getItem('SIM_ASESOR_ROLE') || sessionStorage.getItem('SIM_ASESOR_ROLE');
+        var rawUser = localStorage.getItem('SIM_ASESOR_USER') || sessionStorage.getItem('SIM_ASESOR_USER');
+        // Hanya pasang data-initial-tab jika pengguna terotentikasi dan bukan user biasa (v1.1.08)
+        if (!rawRole || !rawUser || rawRole === 'user') {
+          return;
+        }
         var rawHash = (window.location.hash || '').replace(/^#/, '').toLowerCase().trim();
-        if (rawRole === 'user' && rawHash !== 'dashboard') {
+        if (!rawHash || rawHash === 'dashboard') {
           return;
         }
         var tabKey = (rawHash === 'penugasan' || rawHash === 'data' || rawHash === 'print' || rawHash === 'asesor' || rawHash === 'dbasesor') ? (rawHash === 'asesor' ? 'dbasesor' : rawHash) :

@@ -874,6 +874,30 @@ function loginSuccess(userData, sessionToken) {
     resetAllSystemFilters();
   }
 
+  // Tutup semua modal overlay aktif saat login sukses (v1.1.08)
+  if (typeof closeUserModal === 'function') closeUserModal();
+  if (typeof closeDbAsesorModal === 'function') closeDbAsesorModal();
+  if (typeof closeImportModal === 'function') closeImportModal();
+  if (typeof closeLogModal === 'function') closeLogModal();
+  if (typeof closeStatusModal === 'function') closeStatusModal();
+  if (typeof closeEditUserModal === 'function') closeEditUserModal();
+  if (typeof closeChangePasswordModal === 'function') closeChangePasswordModal();
+  if (typeof closeEditAsesorModal === 'function') closeEditAsesorModal();
+  if (typeof closeProfilAsesorModal === 'function') closeProfilAsesorModal();
+  if (typeof closeAllDropdowns === 'function') closeAllDropdowns();
+
+  // Reset URL Hash dan initial tab cloak agar login selalu murni ke Dashboard awal (v1.1.08)
+  try {
+    if (history.replaceState) {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    } else {
+      window.location.hash = '';
+    }
+  } catch (err) { }
+  try {
+    document.documentElement.removeAttribute('data-initial-tab');
+  } catch (err) { }
+
   document.documentElement.classList.add('is-authenticated');
   if (typeof recordUserActivity === 'function') recordUserActivity();
   const overlay = document.getElementById('loginOverlay');
@@ -881,7 +905,7 @@ function loginSuccess(userData, sessionToken) {
   if (document.body) document.body.classList.remove('login-active');
   stopLoginPlexusEffect();
 
-  // Pindahkan tampilan langsung ke dashboard (v1.0.79)
+  // Pindahkan tampilan langsung ke dashboard (v1.0.79 / v1.1.08)
   if (typeof switchTab === 'function') {
     switchTab('dashboard');
   }
@@ -947,6 +971,35 @@ function handleLogout(e, isTimeout) {
   // Reset seluruh filter sistem ke kondisi awal (default) saat logout (v1.0.58)
   if (typeof resetAllSystemFilters === 'function') {
     resetAllSystemFilters();
+  }
+
+  // Tutup semua modal overlay aktif saat logout (v1.1.08)
+  if (typeof closeUserModal === 'function') closeUserModal();
+  if (typeof closeDbAsesorModal === 'function') closeDbAsesorModal();
+  if (typeof closeImportModal === 'function') closeImportModal();
+  if (typeof closeLogModal === 'function') closeLogModal();
+  if (typeof closeStatusModal === 'function') closeStatusModal();
+  if (typeof closeEditUserModal === 'function') closeEditUserModal();
+  if (typeof closeChangePasswordModal === 'function') closeChangePasswordModal();
+  if (typeof closeEditAsesorModal === 'function') closeEditAsesorModal();
+  if (typeof closeProfilAsesorModal === 'function') closeProfilAsesorModal();
+  if (typeof closeAllDropdowns === 'function') closeAllDropdowns();
+
+  // Reset URL hash dan initial tab cloak agar tidak membuka tab sebelumnya (v1.1.08)
+  try {
+    if (history.replaceState) {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    } else {
+      window.location.hash = '';
+    }
+  } catch (err) { }
+  try {
+    document.documentElement.removeAttribute('data-initial-tab');
+  } catch (err) { }
+
+  // Kembalikan tampilan DOM aktif ke dashboard awal (v1.1.08)
+  if (typeof switchTab === 'function') {
+    switchTab('dashboard');
   }
 
   const userInp = document.getElementById('loginUsername');
@@ -1238,6 +1291,14 @@ document.addEventListener('DOMContentLoaded', function () {
       } catch (e) { }
     }
     document.documentElement.classList.remove('is-authenticated');
+    try {
+      document.documentElement.removeAttribute('data-initial-tab');
+      if (history.replaceState) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      } else {
+        window.location.hash = '';
+      }
+    } catch (e) { }
     if (overlay) overlay.style.display = 'flex';
     if (document.body) document.body.classList.add('login-active');
     startLoginPlexusEffect();
@@ -1246,10 +1307,16 @@ document.addEventListener('DOMContentLoaded', function () {
     if (isExpired) {
       showToast('Sesi Anda telah berakhir karena tidak ada aktivitas selama 15 menit.', true);
     }
+    // Pastikan DOM awal kembali ke dashboard bersih
+    if (typeof switchTab === 'function') {
+      switchTab('dashboard');
+    }
   }
 
-  // 1. Jalankan perutean hash URL awal secara instan (0 detik) agar tab yang diminta langsung aktif
-  handleInitialHashRoute();
+  // 1. Jalankan perutean hash URL awal HANYA jika pengguna terautentikasi (v1.1.08)
+  if (user) {
+    handleInitialHashRoute();
+  }
 
   // 2. Cek ketersediaan cache snapshot data lintas-tab (SIM_ASESOR_DATA_CACHE) untuk pemuatan instan 0 detik
   let hasLocalCache = false;
@@ -1537,8 +1604,11 @@ function applyLoadedData(items, daftarAsesor, stats, customTimestamp, dbAsesorLi
   renderPrintPreview();
   renderPenugasanData();
 
-  // Sinkronisasi tab sesuai URL Hash yang diminta (misal di-open in new tab)
-  handleInitialHashRoute();
+  // Sinkronisasi tab sesuai URL Hash yang diminta HANYA jika ada parameter hash eksplisit selain dashboard (v1.1.08)
+  const currentActiveHash = (window.location.hash || '').replace(/^#/, '').trim().toLowerCase();
+  if (currentActiveHash && currentActiveHash !== 'dashboard') {
+    handleInitialHashRoute();
+  }
 }
 
 // ==========================================================================
@@ -7312,8 +7382,18 @@ function switchTab(tabKey, e) {
  */
 function handleInitialHashRoute() {
   try {
+    // Jangan jalankan perutean hash jika pengguna belum login (v1.1.08)
+    const isAuth = document.documentElement.classList.contains('is-authenticated') ||
+      Boolean(APP_STATE && APP_STATE.currentUser) ||
+      Boolean(sessionStorage.getItem('SIM_ASESOR_USER')) ||
+      Boolean(localStorage.getItem('SIM_ASESOR_USER'));
+    if (!isAuth) {
+      try { document.documentElement.removeAttribute('data-initial-tab'); } catch (e) { }
+      return;
+    }
+
     const rawHash = (window.location.hash || '').replace(/^#/, '').toLowerCase().trim();
-    if (!rawHash) {
+    if (!rawHash || rawHash === 'dashboard') {
       try { document.documentElement.removeAttribute('data-initial-tab'); } catch (e) { }
       return;
     }
