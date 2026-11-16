@@ -5042,6 +5042,9 @@ function renderDbAsesorTablePage() {
         }
       }
 
+      // Sanitasi Tanda Petik (v1.1.06): Hapus semua tanda petik di depan/dalam nomor HP agar tampilan bersih
+      effectiveHp = effectiveHp.replace(/['"`’“”«»]/g, '').trim();
+
       let waMarkup = '';
       const digits = effectiveHp.replace(/\D/g, '');
       if (digits.length >= 9) {
@@ -5343,6 +5346,7 @@ function openEditAsesorModal(niaKey, rowNum, namaKey) {
   setVal('editAsesorKab', found.kabupaten && found.kabupaten !== '-' ? found.kabupaten : '');
   setVal('editAsesorSedia', found.sediaBertugas || 'Bersedia');
   let initEditHp = found.noHp && found.noHp !== '-' ? String(found.noHp).trim() : '';
+  initEditHp = initEditHp.replace(/['"`’“”«»]/g, '').trim();
   const cleanInitDigits = initEditHp.replace(/\D/g, '');
   if (cleanInitDigits.length === 16 && !initEditHp.startsWith('08') && !initEditHp.startsWith('62') && !initEditHp.startsWith('+62')) {
     initEditHp = '';
@@ -5369,7 +5373,7 @@ function submitEditAsesor(e) {
   const status = document.getElementById('editAsesorStatus').value.trim();
   const kabupaten = document.getElementById('editAsesorKab').value.trim();
   const sediaBertugas = document.getElementById('editAsesorSedia').value.trim();
-  const noHp = document.getElementById('editAsesorHp').value.trim();
+  const noHp = document.getElementById('editAsesorHp').value.replace(/['"`’“”«»]/g, '').trim();
   const instansi = document.getElementById('editAsesorInstansi').value.trim();
   const jenjang = document.getElementById('editAsesorJenjang').value.trim();
   const peran = document.getElementById('editAsesorPeran').value.trim();
@@ -5687,6 +5691,9 @@ function openProfilAsesorModal(niaKey, namaKey) {
   if (cleanHpDigits.length === 16 && !effectiveHp.startsWith('08') && !effectiveHp.startsWith('62') && !effectiveHp.startsWith('+62')) {
     effectiveHp = '';
   }
+
+  // Sanitasi Tanda Petik (v1.1.06): Hapus semua tanda petik di depan/dalam nomor HP
+  effectiveHp = effectiveHp.replace(/['"`’“”«»]/g, '').trim();
 
   const digits = effectiveHp.replace(/\D/g, '');
   const valHp = document.getElementById('profilValHp');

@@ -5909,3 +5909,125 @@
   word-break: break-word;
 }
 
+/* ==========================================================================
+   OPTIMASI RESPONSIF MODAL PROFIL ASESOR MODE HP (v1.1.06)
+   ========================================================================== */
+@media (max-width: 640px) {
+  #modalProfilAsesor .modal-window {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 0.5rem auto !important;
+  }
+
+  #modalProfilAsesor .modal-body {
+    padding: 1rem 0.85rem !important;
+    max-height: calc(88vh - 110px) !important;
+  }
+
+  .profil-hero-card {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding: 1.5rem 1rem 1.25rem !important;
+    gap: 0.75rem !important;
+    position: relative !important;
+  }
+
+  .btn-edit-profil-hero {
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    align-self: auto !important;
+    padding: 4px 9px !important;
+    font-size: 0.7rem !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 6px !important;
+    z-index: 2 !important;
+  }
+
+  .profil-avatar-box {
+    width: 72px !important;
+    height: 72px !important;
+    min-width: 72px !important;
+    margin: 0 auto !important;
+    border-width: 2.5px !important;
+  }
+
+  .profil-hero-info {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    min-width: 0 !important;
+  }
+
+  .profil-hero-title-row {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.35rem !important;
+    margin-bottom: 0.5rem !important;
+    width: 100% !important;
+  }
+
+  .profil-hero-name {
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    text-align: center !important;
+    line-height: 1.35 !important;
+    max-width: 100% !important;
+    word-break: break-word !important;
+  }
+
+  .profil-hero-status-pill {
+    margin-top: 2px !important;
+    font-size: 0.68rem !important;
+    padding: 3px 10px !important;
+  }
+
+  .profil-hero-meta-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    width: 100% !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .profil-hero-meta-pill {
+    font-size: 0.74rem !important;
+    padding: 4px 10px !important;
+    max-width: 100% !important;
+    text-align: center !important;
+  }
+
+  .profil-hero-chips-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    width: 100% !important;
+  }
+
+  .profil-hero-chip {
+    font-size: 0.72rem !important;
+    padding: 4px 10px !important;
+    max-width: 100% !important;
+    text-align: center !important;
+  }
+
+  .profil-multi-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .profil-dynamic-chips {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
