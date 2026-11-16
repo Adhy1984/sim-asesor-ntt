@@ -157,6 +157,65 @@ function getClientDeviceInfo() {
   };
 })();
 
+// ==========================================================================
+// DEXIE.JS V3 INDEXEDDB ENGINE (High-Performance Zero-Delay Local Storage)
+// ==========================================================================
+let simDb = null;
+try {
+  if (typeof Dexie !== 'undefined') {
+    simDb = new Dexie('SIM_ASESOR_LOCAL_DB');
+    simDb.version(1).stores({
+      dbAsesor: '++id, no, nia, nama, kabupaten, instansi, jenjang, peran, status, sediaBertugas, noHp'
+    });
+    simDb.version(2).stores({
+      dbAsesor: '++id, no, nia, nama, kabupaten, instansi, jenjang, peran, status, sediaBertugas, noHp',
+      appCache: 'key, savedAt'
+    });
+  }
+} catch (eDexie) {
+  console.warn('Inisialisasi Dexie v3 error:', eDexie);
+}
+
+/**
+ * Menyimpan snapshot dataset lengkap ke Dexie v3 IndexedDB & LocalStorage
+ * Standar Stale-While-Revalidate ZettBOT (Pemuatan Instan 0 Detik)
+ */
+function saveSnapshotToCache(payload) {
+  if (!payload || !payload.items) return;
+  // 1. Simpan ke LocalStorage untuk akses sinkronis 0ms
+  try {
+    localStorage.setItem('SIM_ASESOR_DATA_CACHE', JSON.stringify(payload));
+  } catch (eLs) { }
+
+  // 2. Simpan ke Dexie v3 IndexedDB untuk daya tampung masif tanpa batasan 5MB
+  if (simDb && simDb.appCache) {
+    try {
+      simDb.appCache.put({
+        key: 'LATEST_DATA_SNAPSHOT',
+        items: payload.items,
+        daftarAsesor: payload.daftarAsesor,
+        stats: payload.stats,
+        dbAsesor: payload.dbAsesor,
+        lastSyncTimestamp: payload.lastSyncTimestamp,
+        savedAt: Date.now()
+      }).catch(function (err) {
+        console.warn('Dexie v3 put snapshot error:', err);
+      });
+    } catch (ePut) { }
+  }
+
+  // 3. Simpan dbAsesor ke object store dbAsesor di Dexie v3
+  if (simDb && simDb.dbAsesor && Array.isArray(payload.dbAsesor) && payload.dbAsesor.length > 0) {
+    try {
+      simDb.dbAsesor.clear().then(function () {
+        return simDb.dbAsesor.bulkAdd(payload.dbAsesor);
+      }).catch(function (err) {
+        console.warn('Dexie v3 bulkAdd dbAsesor error:', err);
+      });
+    } catch (eDb) { }
+  }
+}
+
 // In-Memory Client Cache (Standar ZettBOT)
 const hasConfiguredApi = typeof CONFIG !== 'undefined' && CONFIG.GAS_API_URL && !CONFIG.GAS_API_URL.includes('PASTE_WEB_APP');
 const isNativeGAS = typeof google !== 'undefined' && typeof google.script !== 'undefined' && !window._isVercelShim;
@@ -957,7 +1016,9 @@ function handleLogout(e, isTimeout) {
     localStorage.removeItem('SIM_ASESOR_USER');
     localStorage.removeItem('SIM_ASESOR_ROLE');
     localStorage.removeItem('SIM_ASESOR_LAST_ACTIVITY');
-    localStorage.removeItem('SIM_ASESOR_DATA_CACHE');
+    // PERFORMA TINGGI (v1.1.09): Jangan hapus SIM_ASESOR_DATA_CACHE dan Dexie IndexedDB
+    // agar saat pengguna login kembali atau me-refresh tab, seluruh metrik dan grafik
+    // dapat langsung dimuat instan dalam 0 detik (Stale-While-Revalidate).
   } catch (err) { }
   document.documentElement.classList.remove('is-authenticated');
   APP_STATE.currentUserRole = null;
@@ -1318,8 +1379,9 @@ document.addEventListener('DOMContentLoaded', function () {
     handleInitialHashRoute();
   }
 
-  // 2. Cek ketersediaan cache snapshot data lintas-tab (SIM_ASESOR_DATA_CACHE) untuk pemuatan instan 0 detik
+  // 2. Cek ketersediaan cache snapshot data (Stale-While-Revalidate: Pemuatan Instan 0 Detik)
   let hasLocalCache = false;
+  // A. Akses Sinkronis Cepat via LocalStorage (0 ms)
   try {
     const rawCache = localStorage.getItem('SIM_ASESOR_DATA_CACHE');
     if (rawCache) {
@@ -1332,18 +1394,32 @@ document.addEventListener('DOMContentLoaded', function () {
     const rawDb = localStorage.getItem('SIM_ASESOR_DB_ASESOR_CACHE');
     if (rawDb) {
       const parsedDb = JSON.parse(rawDb);
-      if (Array.isArray(parsedDb) && parsedDb.length > 0) {
+      if (Array.isArray(parsedDb) && parsedDb.length > 0 && (!DB_ASESOR_STATE.asesors || DB_ASESOR_STATE.asesors.length === 0)) {
         DB_ASESOR_STATE.asesors = parsedDb;
+        if (typeof updateDbAsesorKpis === 'function') updateDbAsesorKpis(parsedDb);
       }
     }
   } catch (cacheErr) {
-    console.warn('Gagal memuat cache lintas-tab:', cacheErr);
+    console.warn('Gagal memuat cache localStorage:', cacheErr);
   }
 
-  // 3. Hanya ambil data dari server jarak jauh jika belum ada data di cache lokal
-  if (!hasLocalCache) {
-    refreshData(false);
+  // B. Akses Asinkronis via Dexie v3 IndexedDB (Jika LocalStorage kosong atau terhapus)
+  if (!hasLocalCache && simDb && simDb.appCache) {
+    try {
+      simDb.appCache.get('LATEST_DATA_SNAPSHOT').then(function (snap) {
+        if (snap && Array.isArray(snap.items) && snap.items.length > 0 && (!APP_STATE.items || APP_STATE.items.length === 0)) {
+          applyLoadedData(snap.items, snap.daftarAsesor, snap.stats, snap.lastSyncTimestamp, snap.dbAsesor);
+          hasLocalCache = true;
+        }
+      }).catch(function (eSnap) {
+        console.warn('Dexie v3 load snapshot error:', eSnap);
+      });
+    } catch (eDex) { }
   }
+
+  // 3. Stale-While-Revalidate (v1.1.09): SELALU jalankan sinkronisasi senyap (silent background fetch)
+  //    ke server agar data tetap mutakhir tanpa membuat pengguna menunggu lama
+  refreshData(false);
 });
 
 function initAppDate() {
@@ -1357,15 +1433,18 @@ function initAppDate() {
 
 /**
  * Memuat atau menyegarkan data dari Backend (GAS / Mock Fallback)
+ * Mengimplementasikan Stale-While-Revalidate dengan Token Otentikasi Penuh (v1.1.09)
  */
 function refreshData(isManual) {
   const btn = document.getElementById('btnRefresh');
   const mobileBtn = document.getElementById('btnMobileRefresh');
   const metricsGrid = document.querySelector('.metrics-grid');
-  if (btn) btn.classList.add('spinning');
-  if (mobileBtn) mobileBtn.classList.add('spinning');
+  if (btn && isManual) btn.classList.add('spinning');
+  if (mobileBtn && isManual) mobileBtn.classList.add('spinning');
   if (metricsGrid && isManual) metricsGrid.classList.add('is-refreshing');
-    startTopProgress();
+  if (isManual) startTopProgress();
+
+  const activeToken = (APP_STATE && APP_STATE.sessionToken) || sessionStorage.getItem('SIM_ASESOR_SESSION_TOKEN') || localStorage.getItem('SIM_ASESOR_SESSION_TOKEN') || '';
 
   if (APP_STATE.isGoogleAppsScript) {
     google.script.run
@@ -1373,22 +1452,22 @@ function refreshData(isManual) {
         if (btn) btn.classList.remove('spinning');
         if (mobileBtn) mobileBtn.classList.remove('spinning');
         if (metricsGrid) metricsGrid.classList.remove('is-refreshing');
+        if (isManual) completeTopProgress();
         if (res && res.success) {
-          completeTopProgress();
           applyLoadedData(res.data, res.daftarAsesor, res.stats, null, res.dbAsesor);
+          if (isManual) showToast('Data berhasil diperbarui dari Google Sheets');
         } else {
-          completeTopProgress();
-          showToast('Gagal memuat data dari server', true);
+          if (isManual) showToast((res && res.message) ? res.message : 'Gagal memuat data dari server', true);
         }
       })
       .withFailureHandler(function (err) {
         if (btn) btn.classList.remove('spinning');
         if (mobileBtn) mobileBtn.classList.remove('spinning');
         if (metricsGrid) metricsGrid.classList.remove('is-refreshing');
-        completeTopProgress();
-          showToast('Error koneksi: ' + err.toString(), true);
+        if (isManual) completeTopProgress();
+        if (isManual) showToast('Error koneksi: ' + err.toString(), true);
       })
-      .ambilSemuaData();
+      .ambilSemuaData(activeToken);
   } else {
     // Mode Standalone Browser (Simulasi Cerdas)
     setTimeout(function () {
@@ -1398,10 +1477,10 @@ function refreshData(isManual) {
       const savedData = localStorage.getItem('SIM_ASESOR_DATA');
       let items = savedData ? JSON.parse(savedData) : FALLBACK_SEED_DATA;
       const computed = computeStatsAndAsesorList(items);
-      completeTopProgress();
+      if (isManual) completeTopProgress();
       const initialDb = (typeof getSynthesizedDbAsesorFromAppState === 'function') ? getSynthesizedDbAsesorFromAppState(computed.daftarAsesor) : [];
       applyLoadedData(items, computed.daftarAsesor, computed.stats, null, initialDb);
-    }, 350);
+    }, isManual ? 350 : 50);
   }
 }
 
@@ -1562,7 +1641,7 @@ function applyLoadedData(items, daftarAsesor, stats, customTimestamp, dbAsesorLi
   }
   APP_STATE.lastSyncTimestamp = formattedTimestamp;
 
-  // Simpan snapshot dataset lengkap ke cache lintas-tab (0 detik instan untuk tab baru)
+  // Simpan snapshot dataset lengkap ke Dexie v3 IndexedDB & LocalStorage (Pemuatan Instan 0 Detik v1.1.09)
   try {
     const cachePayload = {
       items: items,
@@ -1572,7 +1651,11 @@ function applyLoadedData(items, daftarAsesor, stats, customTimestamp, dbAsesorLi
       lastSyncTimestamp: formattedTimestamp,
       savedAt: Date.now()
     };
-    localStorage.setItem('SIM_ASESOR_DATA_CACHE', JSON.stringify(cachePayload));
+    if (typeof saveSnapshotToCache === 'function') {
+      saveSnapshotToCache(cachePayload);
+    } else {
+      localStorage.setItem('SIM_ASESOR_DATA_CACHE', JSON.stringify(cachePayload));
+    }
   } catch (cacheErr) {
     console.warn('Gagal menyimpan cache lintas-tab:', cacheErr);
   }
@@ -4282,16 +4365,20 @@ function confirmDeleteUser(username, nama) {
 /* ==========================================================================
    DATABASE ASESOR & PROFIL ASESOR CONTROLLER (SHEET DBASESOR - v1.0.65)
    ========================================================================== */
-let simDb = null;
-try {
-  if (typeof Dexie !== 'undefined') {
+// simDb diinisialisasi secara terpusat di 01_core.js via Dexie v3
+if (!simDb && typeof Dexie !== 'undefined') {
+  try {
     simDb = new Dexie('SIM_ASESOR_LOCAL_DB');
     simDb.version(1).stores({
       dbAsesor: '++id, no, nia, nama, kabupaten, instansi, jenjang, peran, status, sediaBertugas, noHp'
     });
+    simDb.version(2).stores({
+      dbAsesor: '++id, no, nia, nama, kabupaten, instansi, jenjang, peran, status, sediaBertugas, noHp',
+      appCache: 'key, savedAt'
+    });
+  } catch (eDexie) {
+    console.warn('Inisialisasi Dexie v3 fallback error:', eDexie);
   }
-} catch (eDexie) {
-  console.warn('Inisialisasi Dexie v3 error:', eDexie);
 }
 
 const DB_ASESOR_STATE = {
@@ -4778,13 +4865,27 @@ function renderDbAsesorTable(list) {
  * Menginisialisasi dan merender Tab Data Asesor
  */
 function renderDbAsesorTab() {
-  // 1. Jika data asesor sudah ada di memori, langsung hitung KPI & render
+  // 1. Jika data asesor sudah ada di memori, langsung hitung KPI & render (0 ms)
   if (Array.isArray(DB_ASESOR_STATE.asesors) && DB_ASESOR_STATE.asesors.length > 0) {
     updateDbAsesorKpis(DB_ASESOR_STATE.asesors);
     populateDbAsesorTabFilters(DB_ASESOR_STATE.asesors);
     filterDbAsesorTab();
     return;
   }
+
+  // 1b. Cek LocalStorage sinkronis (0 ms) sebelum menunggu promise IndexedDB
+  try {
+    const cachedDb = localStorage.getItem('SIM_ASESOR_DB_ASESOR_CACHE');
+    if (cachedDb) {
+      const parsed = JSON.parse(cachedDb);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        DB_ASESOR_STATE.asesors = parsed;
+        updateDbAsesorKpis(parsed);
+        populateDbAsesorTabFilters(parsed);
+        filterDbAsesorTab();
+      }
+    }
+  } catch (eCache) { }
 
   // 2. Pre-load instan dari IndexedDB via Dexie v3 (0 ms)
   if (simDb && simDb.dbAsesor) {
