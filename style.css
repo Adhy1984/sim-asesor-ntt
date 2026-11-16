@@ -2122,19 +2122,93 @@
       flex-shrink: 0;
     }
 
-    .filter-item select {
+    .filter-item select,
+    .filter-item input[type="text"] {
       width: 100%;
-      padding: 0.55rem 0.85rem;
-      border: 1px solid var(--border-color);
+      height: 38px;
+      padding: 0 0.85rem;
+      border: 1.5px solid #cbd5e1;
       border-radius: var(--radius-sm);
       font-family: var(--font-body);
       font-size: 0.85rem;
+      font-weight: 500;
+      color: #0f172a;
       background: #ffffff;
       outline: none;
+      box-sizing: border-box;
+      transition: all var(--transition-fast);
     }
 
-    .filter-item select:focus {
+    .filter-item select:focus,
+    .filter-item input[type="text"]:focus {
       border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .filter-item input[type="text"] {
+      padding-left: 2.1rem;
+      padding-right: 1.8rem;
+    }
+
+    /* ==========================================================================
+       INTERACTIVE STATUS TOGGLE BUTTON (DATA ASESOR - REVISI v1.1.05)
+       ========================================================================== */
+    .btn-status-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all var(--transition-fast);
+      user-select: none;
+      white-space: nowrap;
+      background: none;
+      outline: none;
+      line-height: 1.2;
+    }
+
+    .btn-status-toggle .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    .btn-status-toggle.aktif {
+      background-color: var(--emerald-bg);
+      color: var(--emerald);
+      border-color: var(--emerald-border);
+    }
+
+    .btn-status-toggle.aktif:hover {
+      background-color: #d1fae5;
+      border-color: #6ee7b7;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(5, 150, 105, 0.15);
+    }
+
+    .btn-status-toggle.tidak-aktif {
+      background-color: var(--rose-bg);
+      color: var(--rose);
+      border-color: var(--rose-border);
+    }
+
+    .btn-status-toggle.tidak-aktif:hover {
+      background-color: #ffe4e6;
+      border-color: #fda4af;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(225, 29, 72, 0.15);
+    }
+
+    .btn-status-toggle:active {
+      transform: scale(0.97);
     }
 
     /* ==========================================================================

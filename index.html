@@ -1096,8 +1096,8 @@
           <!-- Live Debounce Search -->
           <div class="filter-item">
             <label for="dbAsesorTabSearch">Pencarian Asesor</label>
-            <div style="position: relative;">
-              <input type="text" id="dbAsesorTabSearch" class="custom-select" style="width: 100%; padding-left: 2rem; padding-right: 2rem;" placeholder="Cari nama atau NIA..." oninput="onDbAsesorTabSearch(this.value)">
+            <div style="position: relative; width: 100%;">
+              <input type="text" id="dbAsesorTabSearch" placeholder="Cari nama atau NIA..." oninput="onDbAsesorTabSearch(this.value)">
               <svg style="position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; stroke: #94a3b8; fill: none; pointer-events: none;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <button type="button" id="btnDbAsesorTabClearSearch" onclick="clearDbAsesorTabSearch()" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; padding: 2px 6px; font-size: 1rem; display: none;" title="Hapus pencarian">&times;</button>
             </div>
@@ -1125,6 +1125,7 @@
             <select id="dbAsesorTabFilterStatus" class="custom-select" onchange="filterDbAsesorTab()">
               <option value="">-- Semua Status --</option>
               <option value="Aktif">Aktif</option>
+              <option value="Tidak Aktif">Tidak Aktif</option>
               <option value="Bersedia">Bersedia Bertugas</option>
             </select>
           </div>
@@ -1966,9 +1967,9 @@
             <div>
               <label for="editAsesorStatus" class="form-label" style="font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.3rem; display: block;">Status Keaktifan</label>
               <select id="editAsesorStatus" class="custom-select" style="width: 100%;">
-                <option value="Sertifikat Aktif">Sertifikat Aktif</option>
                 <option value="Aktif">Aktif</option>
-                <option value="Non-Aktif">Non-Aktif</option>
+                <option value="Tidak Aktif">Tidak Aktif</option>
+                <option value="Sertifikat Aktif">Sertifikat Aktif</option>
               </select>
             </div>
             <div>

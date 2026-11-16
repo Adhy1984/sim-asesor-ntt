@@ -4759,6 +4759,68 @@ function renderDbAsesorTab() {
 }
 
 /**
+ * Menentukan status keaktifan asesor (Revisi v1.1.05):
+ * Jika 0% kinerja maka dianggap TIDAK AKTIF, kecuali telah diedit/di-override secara manual oleh admin.
+ */
+function evaluateDbAsesorAktif(item) {
+  if (!item) return false;
+  const rawSt = String(item.status || '').trim();
+  const lowSt = rawSt.toLowerCase();
+
+  // Jika telah diedit manual oleh admin (override):
+  if (item.manualStatusOverride) {
+    return (lowSt === 'aktif' || lowSt === 'sertifikat aktif');
+  }
+
+  // Jika eksplisit tertulis Tidak Aktif / Non-Aktif:
+  if (lowSt === 'tidak aktif' || lowSt === 'non-aktif' || lowSt === 'nonaktif') {
+    return false;
+  }
+
+  // Evaluasi kinerja berdasarkan penugasan
+  let totalTugas = 0;
+  let selesaiTugas = 0;
+  let persenKinerja = 0;
+
+  if (item.stats && item.stats.totalSekolah !== undefined && item.stats.progres !== undefined) {
+    totalTugas = item.stats.totalSekolah || 0;
+    persenKinerja = item.stats.progres || 0;
+  } else {
+    const foundAssigned = (APP_STATE.daftarAsesor || []).find(function (a) {
+      const matchNia = (item.nia && item.nia !== '-' && a.nia && a.nia !== '-' && String(a.nia).trim() === String(item.nia).trim());
+      const matchNama = (item.nama && a.nama && String(a.nama).trim().toUpperCase() === String(item.nama).trim().toUpperCase());
+      return matchNia || matchNama;
+    });
+
+    if (foundAssigned && (foundAssigned.totalTugas || 0) > 0) {
+      totalTugas = foundAssigned.totalTugas || 0;
+      selesaiTugas = foundAssigned.selesai || 0;
+      const tot = (foundAssigned.selesai || 0) + (foundAssigned.belum || 0);
+      persenKinerja = tot > 0 ? Math.round((selesaiTugas / tot) * 100) : 0;
+    } else if (Array.isArray(APP_STATE.items) && APP_STATE.items.length > 0 && item.nama) {
+      const normNama = String(item.nama).trim().toUpperCase();
+      const pRows = APP_STATE.items.filter(function (r) {
+        return (r.namaAsesor1 && String(r.namaAsesor1).trim().toUpperCase() === normNama) ||
+               (r.namaAsesor2 && String(r.namaAsesor2).trim().toUpperCase() === normNama) ||
+               (item.nia && item.nia !== '-' && (r.nia1 === item.nia || r.nia2 === item.nia));
+      });
+      if (pRows.length > 0) {
+        totalTugas = pRows.length;
+        pRows.forEach(function (r) {
+          const isA1 = (r.namaAsesor1 && String(r.namaAsesor1).trim().toUpperCase() === normNama) || (item.nia && r.nia1 === item.nia);
+          const isSel = isA1 ? (r.status1 === 'SELESAI') : (r.status2 === 'SELESAI');
+          if (isSel) selesaiTugas++;
+        });
+        persenKinerja = Math.round((selesaiTugas / totalTugas) * 100);
+      }
+    }
+  }
+
+  // Aturan Revisi v1.1.05: Jika asesor 0% kinerja maka dianggap TIDAK AKTIF
+  return (persenKinerja > 0);
+}
+
+/**
  * Menghitung dan memperbarui 4 kartu KPI ringkasan Data Asesor (dengan Animasi Counter Halus)
  */
 function updateDbAsesorKpis(list) {
@@ -4774,8 +4836,7 @@ function updateDbAsesorKpis(list) {
   const kabMap = {};
 
   list.forEach(function (item) {
-    const st = String(item.status || '').toLowerCase();
-    if (st.includes('aktif')) aktifCount++;
+    if (evaluateDbAsesorAktif(item)) aktifCount++;
 
     const sd = String(item.sediaBertugas || item.status || '').toLowerCase();
     if (sd.includes('sedia') || sd.includes('ya') || sd.includes('siap')) sediaCount++;
@@ -4871,10 +4932,10 @@ function filterDbAsesorTab() {
     if (fKab && String(item.kabupaten || '').trim().toLowerCase() !== fKab) return false;
     if (fJenjang && String(item.jenjang || '').trim().toLowerCase() !== fJenjang) return false;
     if (fStatus) {
-      const itemSt = String(item.status || '').toLowerCase();
-      const itemSd = String(item.sediaBertugas || '').toLowerCase();
-      if (fStatus === 'aktif' && !itemSt.includes('aktif')) return false;
-      if (fStatus === 'bersedia' && !itemSd.includes('sedia')) return false;
+      const isAktif = evaluateDbAsesorAktif(item);
+      if (fStatus === 'aktif' && !isAktif) return false;
+      if ((fStatus === 'tidak aktif' || fStatus === 'non-aktif' || fStatus === 'nonaktif') && isAktif) return false;
+      if (fStatus === 'bersedia' && !String(item.sediaBertugas || '').toLowerCase().includes('sedia')) return false;
     }
     if (q) {
       const mNama = String(item.nama || '').toLowerCase().includes(q);
@@ -4997,9 +5058,10 @@ function renderDbAsesorTablePage() {
           '</button>';
       }
 
-      // Lencana Status & Beban Kinerja Asesor (0% Kinerja bagi yang belum bertugas)
-      const isAktif = String(item.status || '').toLowerCase().includes('aktif');
-      const statusBadgeClass = isAktif ? 'status-badge-selesai' : 'status-badge-belum';
+      // Evaluasi Status Asesor (Revisi v1.1.05: Jika 0% Kinerja maka dianggap Tidak Aktif)
+      const isAktif = evaluateDbAsesorAktif(item);
+      const displayStatusText = isAktif ? 'AKTIF' : 'TIDAK AKTIF';
+      const toggleBtnClass = isAktif ? 'aktif' : 'tidak-aktif';
 
       let totalTugas = 0;
       let selesaiTugas = 0;
@@ -5054,7 +5116,11 @@ function renderDbAsesorTablePage() {
         '<td class="center"><span class="badge-jenjang" style="font-size: 0.7rem; padding: 2px 7px;">' + escapeHtml(item.jenjang || '-') + '</span></td>' +
         '<td class="center">' + waMarkup + '</td>' +
         '<td class="center">' +
-        '<span class="status-badge ' + statusBadgeClass + '" style="font-size: 0.68rem; padding: 2px 6px; display: block; margin-bottom: 2px;">' + escapeHtml(item.status || 'Aktif') + '</span>' +
+        '<button type="button" class="btn-status-toggle ' + toggleBtnClass + '" onclick="handleToggleDbAsesorStatus(this)" data-nia="' + escapeHtml(item.nia || '') + '" data-nama="' + escapeHtml(item.nama || '') + '" data-row="' + (item.rowNumber || 0) + '" data-status="' + (isAktif ? 'Aktif' : 'Tidak Aktif') + '" title="Klik untuk mengubah status asesor ini (' + (isAktif ? 'Aktif ➔ Tidak Aktif' : 'Tidak Aktif ➔ Aktif') + ')">' +
+        '<span class="status-dot"></span>' +
+        '<span>' + displayStatusText + '</span>' +
+        '<svg style="width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2.2; margin-left: 2px;" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>' +
+        '</button>' +
         kinerjaBadge +
         '</td>' +
         '<td class="center">' +
@@ -5129,6 +5195,88 @@ function handleTambahWaClick(btn) {
   openEditAsesorModal(nia, 0, nama);
 }
 
+/**
+ * Mengubah status asesor secara langsung dari tombol status tabel (Revisi v1.1.05)
+ */
+function handleToggleDbAsesorStatus(btn) {
+  if (!btn) return;
+  const nia = btn.getAttribute('data-nia') || '';
+  const nama = btn.getAttribute('data-nama') || '';
+  const rowNum = parseInt(btn.getAttribute('data-row'), 10) || 0;
+  const currentStatus = btn.getAttribute('data-status') || 'Aktif';
+  const newStatus = (currentStatus === 'Aktif') ? 'Tidak Aktif' : 'Aktif';
+
+  // Cari item di DB_ASESOR_STATE
+  const all = DB_ASESOR_STATE.asesors || [];
+  const target = all.find(function (a) {
+    return (rowNum > 0 && a.rowNumber === rowNum) ||
+           (nia && a.nia && String(a.nia).trim() === nia) ||
+           (nama && a.nama && String(a.nama).trim().toUpperCase() === nama.toUpperCase());
+  });
+
+  if (!target) {
+    showToast('Data profil asesor tidak ditemukan.');
+    return;
+  }
+
+  // 1. Optimistic Update lokal
+  target.status = newStatus;
+  target.manualStatusOverride = true;
+
+  // Perbarui cache LocalStorage
+  try {
+    localStorage.setItem('SIM_ASESOR_DB_ASESOR_CACHE', JSON.stringify(DB_ASESOR_STATE.asesors));
+  } catch (err) {}
+
+  // Perbarui Dexie v3
+  if (typeof initDexieDb === 'function') {
+    initDexieDb().then(function (db) {
+      if (db && db.asesor) {
+        db.asesor.put(Object.assign({}, target)).catch(function () {});
+      }
+    }).catch(function () {});
+  }
+
+  // Re-render tabel aktif dan perbarui KPI
+  renderDbAsesorTablePage();
+  updateDbAsesorKpis(DB_ASESOR_STATE.asesors);
+  showToast('Status ' + (target.nama || 'Asesor') + ' berhasil diubah menjadi ' + newStatus.toUpperCase());
+
+  // 2. Kirim update ke Backend Google Sheets / REST API
+  const payload = {
+    rowNumber: target.rowNumber || rowNum,
+    nia: target.nia || nia,
+    nama: target.nama || nama,
+    status: newStatus
+  };
+
+  if (APP_STATE.isGoogleAppsScript) {
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (res && res.success) {
+          // Berhasil tersimpan di sheet DBAsesor
+        }
+      })
+      .withFailureHandler(function (err) {
+        console.warn('Gagal sinkronisasi status ke spreadsheet: ' + err.toString());
+      })
+      .updateDbAsesor(payload, APP_STATE.sessionToken);
+  } else {
+    // Vercel / REST API mode
+    if (typeof callGasApi === 'function') {
+      callGasApi('updateDbAsesor', { asesorData: payload })
+        .then(function (res) {
+          if (res && res.success) {
+            // Berhasil tersimpan
+          }
+        })
+        .catch(function (err) {
+          console.warn('Gagal sinkronisasi status ke API: ' + err.toString());
+        });
+    }
+  }
+}
+
 function handleEditFromProfilModal() {
   if (!CURRENT_PROFIL_ASESOR) {
     showToast('Data profil asesor tidak tersedia untuk diedit.');
@@ -5167,7 +5315,7 @@ function openEditAsesorModal(niaKey, rowNum, namaKey) {
         instansi: fallback.instansi || 'Satuan Pendidikan BAN PDM NTT',
         jenjang: fallback.jenjangMap ? Object.keys(fallback.jenjangMap).join(', ') : 'SD/MI',
         peran: fallback.peran || 'Asesor',
-        status: 'Sertifikat Aktif',
+        status: 'Aktif',
         sediaBertugas: 'Bersedia',
         noHp: (fallback.hp && fallback.hp !== '-') ? fallback.hp : ''
       };
@@ -5190,7 +5338,8 @@ function openEditAsesorModal(niaKey, rowNum, namaKey) {
   setVal('editAsesorRowNumber', found.rowNumber || '');
   setVal('editAsesorNia', found.nia && found.nia !== '-' ? found.nia : '');
   setVal('editAsesorNama', found.nama && found.nama !== '-' ? found.nama : '');
-  setVal('editAsesorStatus', found.status || 'Sertifikat Aktif');
+  const currentIsAktif = evaluateDbAsesorAktif(found);
+  setVal('editAsesorStatus', currentIsAktif ? 'Aktif' : 'Tidak Aktif');
   setVal('editAsesorKab', found.kabupaten && found.kabupaten !== '-' ? found.kabupaten : '');
   setVal('editAsesorSedia', found.sediaBertugas || 'Bersedia');
   let initEditHp = found.noHp && found.noHp !== '-' ? String(found.noHp).trim() : '';
@@ -5235,6 +5384,7 @@ function submitEditAsesor(e) {
     nia: nia,
     nama: nama,
     status: status,
+    manualStatusOverride: true,
     kabupaten: kabupaten,
     sediaBertugas: sediaBertugas,
     noHp: noHp,
@@ -5489,8 +5639,8 @@ function openProfilAsesorModal(niaKey, namaKey) {
 
   const statusBadge = document.getElementById('profilStatusBadge');
   if (statusBadge) {
-    const isAktif = String(found.status || '').toLowerCase().includes('aktif');
-    statusBadge.textContent = '● ' + (found.status || 'AKTIF').toUpperCase();
+    const isAktif = evaluateDbAsesorAktif(found);
+    statusBadge.textContent = '● ' + (isAktif ? 'AKTIF' : 'TIDAK AKTIF');
     statusBadge.className = 'profil-hero-status-pill ' + (isAktif ? 'aktif' : 'nonaktif');
   }
 
@@ -5571,7 +5721,10 @@ function openProfilAsesorModal(niaKey, namaKey) {
   if (valPeran) valPeran.textContent = found.peran || 'Asesor';
 
   const valStatus = document.getElementById('profilValStatus');
-  if (valStatus) valStatus.textContent = found.status || 'Aktif';
+  if (valStatus) {
+    const isAktif = evaluateDbAsesorAktif(found);
+    valStatus.textContent = isAktif ? 'Aktif' : 'Tidak Aktif';
+  }
 
   // Field Biodata, Kontak & Akademik Tambahan (v1.1.02)
   const valEmail = document.getElementById('profilValEmail');
